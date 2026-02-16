@@ -1,0 +1,229 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { createClient } from "@/lib/supabase/client";
+
+export interface FavoriteClue {
+  question: string;
+  answer: string;
+  category: string;
+  difficulty: number;
+  savedAt: number;
+}
+
+export interface DislikedClue {
+  question: string;
+  answer: string;
+  category: string;
+  reason?: string;
+  rejectedAt: number;
+}
+
+export interface GenerationState {
+  seen_answers: string[];
+  seen_topics: string[];
+  seen_clues: string[];
+  favorite_clues: FavoriteClue[];
+  disliked_clues: DislikedClue[];
+}
+
+const EMPTY_STATE: GenerationState = {
+  seen_answers: [],
+  seen_topics: [],
+  seen_clues: [],
+  favorite_clues: [],
+  disliked_clues: [],
+};
+
+export function useGenerationState() {
+  const { user } = useAuth();
+  const [state, setState] = useState<GenerationState>(EMPTY_STATE);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  // Load generation state from Supabase
+  const loadState = useCallback(async () => {
+    if (!user) {
+      setState(EMPTY_STATE);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("generation_state")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) {
+        if (error.code === "PGRST116") {
+          // No row exists yet - create one
+          console.log("📝 Creating initial generation state...");
+          await supabase.from("generation_state").insert({
+            user_id: user.id,
+            seen_answers: [],
+            seen_topics: [],
+            seen_clues: [],
+            favorite_clues: [],
+            disliked_clues: [],
+          });
+          setState(EMPTY_STATE);
+        } else {
+          throw error;
+        }
+      } else if (data) {
+        setState({
+          seen_answers: data.seen_answers || [],
+          seen_topics: data.seen_topics || [],
+          seen_clues: data.seen_clues || [],
+          favorite_clues: data.favorite_clues || [],
+          disliked_clues: data.disliked_clues || [],
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error loading generation state:", error);
+      setState(EMPTY_STATE);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, supabase]);
+
+  useEffect(() => {
+    loadState();
+  }, [loadState]);
+
+  // Add answers, topics, and clues to seen lists (SIMPLIFIED - no RPC)
+  const addToSeen = useCallback(
+    async (params: {
+      answers?: string[];
+      topics?: string[];
+      clues?: string[];
+    }) => {
+      if (!user) return;
+
+      try {
+        console.log("💾 Saving to generation state:", params);
+
+        // Build new arrays (deduplicated)
+        const newAnswers = [...new Set([...state.seen_answers, ...(params.answers || [])])].slice(-50);
+        const newTopics = [...new Set([...state.seen_topics, ...(params.topics || [])])].slice(-50);
+        const newClues = [...new Set([...state.seen_clues, ...(params.clues || [])])].slice(-30);
+
+        const { error } = await supabase
+          .from("generation_state")
+          .upsert({
+            user_id: user.id,
+            seen_answers: newAnswers,
+            seen_topics: newTopics,
+            seen_clues: newClues,
+            favorite_clues: state.favorite_clues,
+            disliked_clues: state.disliked_clues,
+          });
+
+        if (error) throw error;
+
+        console.log("✅ Generation state saved!");
+        await loadState();
+      } catch (error) {
+        console.error("❌ Error adding to seen lists:", error);
+      }
+    },
+    [user, supabase, loadState, state]
+  );
+
+  // Add a favorite clue (for style learning)
+  const addFavorite = useCallback(
+    async (clue: Omit<FavoriteClue, "savedAt">) => {
+      if (!user) return;
+
+      try {
+        const newFavorite = { ...clue, savedAt: Date.now() };
+        const newFavorites = [...state.favorite_clues, newFavorite].slice(-50);
+
+        const { error } = await supabase
+          .from("generation_state")
+          .upsert({
+            user_id: user.id,
+            seen_answers: state.seen_answers,
+            seen_topics: state.seen_topics,
+            seen_clues: state.seen_clues,
+            favorite_clues: newFavorites,
+            disliked_clues: state.disliked_clues,
+          });
+
+        if (error) throw error;
+
+        await loadState();
+      } catch (error) {
+        console.error("Error adding favorite:", error);
+      }
+    },
+    [user, supabase, loadState, state]
+  );
+
+  // Add a disliked clue (to avoid in future)
+  const addDislike = useCallback(
+    async (clue: Omit<DislikedClue, "rejectedAt">) => {
+      if (!user) return;
+
+      try {
+        const newDislike = { ...clue, rejectedAt: Date.now() };
+        const newDislikes = [...state.disliked_clues, newDislike].slice(-100);
+
+        const { error } = await supabase
+          .from("generation_state")
+          .upsert({
+            user_id: user.id,
+            seen_answers: state.seen_answers,
+            seen_topics: state.seen_topics,
+            seen_clues: state.seen_clues,
+            favorite_clues: state.favorite_clues,
+            disliked_clues: newDislikes,
+          });
+
+        if (error) throw error;
+
+        await loadState();
+      } catch (error) {
+        console.error("Error adding dislike:", error);
+      }
+    },
+    [user, supabase, loadState, state]
+  );
+
+  // Clear all seen data
+  const clearSeen = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("generation_state")
+        .upsert({
+          user_id: user.id,
+          seen_answers: [],
+          seen_topics: [],
+          seen_clues: [],
+          favorite_clues: state.favorite_clues,
+          disliked_clues: state.disliked_clues,
+        });
+
+      if (error) throw error;
+
+      await loadState();
+    } catch (error) {
+      console.error("Error clearing seen lists:", error);
+    }
+  }, [user, supabase, loadState, state]);
+
+  return {
+    state,
+    loading,
+    addToSeen,
+    addFavorite,
+    addDislike,
+    clearSeen,
+    reload: loadState,
+  };
+}
