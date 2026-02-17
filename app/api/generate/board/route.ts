@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
       disliked_clues: [],
     };
 
-    // Generate each column using Claude API (in parallel)
-    const result = await Promise.all(
+    // Generate each column using Claude API (in parallel, tolerating individual failures)
+    const settled = await Promise.allSettled(
       columns.map(async (col) => {
         const { categoryName, categoryPrompt, rowValues } = col;
 
@@ -152,24 +152,35 @@ Generate ${rowValues.length} completely different, high-quality Jeopardy clues n
         const userMessage = `Generate ${rowValues.length} diverse Jeopardy questions for "${categoryName}"`;
 
         let msg;
-        let items;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let items: any[] | undefined;
         let retryCount = 0;
         const maxRetries = 3;
 
-        // Retry loop to handle duplicate answers
+        // Retry loop to handle duplicate answers and content filter blocks
         while (retryCount < maxRetries) {
           try {
             msg = await anthropic.messages.create({
               model: "claude-sonnet-4-5-20250929",
               max_tokens: 3000,
-              temperature: 0.5,
+              temperature: 0.5 + retryCount * 0.1,
               system: systemPrompt,
-              messages: [{ role: "user", content: userMessage }],
+              messages: [{ role: "user", content: retryCount > 0
+                ? `Generate ${rowValues.length} diverse Jeopardy questions for "${categoryName}". Use different angles and topics than typical.`
+                : userMessage }],
             });
             console.log(`✅ Generated "${categoryName}"`);
           } catch (apiError: unknown) {
-            console.error(`❌ API call failed for "${categoryName}":`, apiError);
-            throw new Error(`API call failed for ${categoryName}: ${apiError instanceof Error ? apiError.message : String(apiError)}`);
+            const errMsg = apiError instanceof Error ? apiError.message : String(apiError);
+            const isContentFilter = errMsg.includes("content filtering") || errMsg.includes("blocked");
+            console.error(`❌ API call failed for "${categoryName}":`, errMsg);
+
+            if (isContentFilter && retryCount < maxRetries - 1) {
+              retryCount++;
+              console.warn(`⚠️ Content filter hit for "${categoryName}", retrying (${retryCount}/${maxRetries})...`);
+              continue;
+            }
+            throw new Error(`API call failed for ${categoryName}: ${errMsg}`);
           }
 
           const text = msg.content?.[0]?.type === "text" ? msg.content[0].text.trim() : "";
@@ -230,7 +241,27 @@ Generate ${rowValues.length} completely different, high-quality Jeopardy clues n
       })
     );
 
-    console.log(`✅ Full board generated (${result.length} columns)`);
+    // Extract successful results, log failures
+    const result = [];
+    const failures = [];
+    for (const s of settled) {
+      if (s.status === "fulfilled") {
+        result.push(s.value);
+      } else {
+        console.error("Column generation failed:", s.reason);
+        failures.push(String(s.reason));
+      }
+    }
+
+    if (result.length === 0) {
+      throw new Error(`All columns failed to generate. Errors: ${failures.join("; ")}`);
+    }
+
+    if (failures.length > 0) {
+      console.warn(`⚠️ ${failures.length} column(s) failed, ${result.length} succeeded`);
+    }
+
+    console.log(`✅ Board generated (${result.length}/${columns.length} columns)`);
 
     return NextResponse.json({
       columns: result,
@@ -238,6 +269,7 @@ Generate ${rowValues.length} completely different, high-quality Jeopardy clues n
         provider: "claude",
         model: "claude-sonnet-4-5-20250929",
         columnsGenerated: result.length,
+        columnsFailed: failures.length,
       }
     });
   } catch (err: unknown) {

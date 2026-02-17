@@ -24,6 +24,11 @@ export default function SavedBoardsModal({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [sharingBoardId, setSharingBoardId] = useState<string | null>(null);
   const [sharingBoardName, setSharingBoardName] = useState("");
+  const [publishingBoardId, setPublishingBoardId] = useState<string | null>(null);
+  const [publishTitle, setPublishTitle] = useState("");
+  const [publishDescription, setPublishDescription] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [publishedBoardIds, setPublishedBoardIds] = useState<Set<string>>(new Set());
 
   async function handleSave() {
     if (!saveName.trim()) return;
@@ -48,6 +53,41 @@ export default function SavedBoardsModal({
   function handleShare(boardId: string, boardName: string) {
     setSharingBoardId(boardId);
     setSharingBoardName(boardName);
+  }
+
+  function handleStartPublish(boardId: string, boardName: string) {
+    setPublishingBoardId(boardId);
+    setPublishTitle(boardName);
+    setPublishDescription("");
+    setDeleteConfirmId(null);
+  }
+
+  async function handlePublish() {
+    if (!publishingBoardId || !publishTitle.trim()) return;
+    setPublishing(true);
+    try {
+      const res = await fetch("/api/community/boards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          boardId: publishingBoardId,
+          title: publishTitle.trim(),
+          description: publishDescription.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        onToast(data.error || "Failed to publish", "error");
+      } else {
+        setPublishedBoardIds((prev) => new Set(prev).add(publishingBoardId));
+        onToast("Board published to community!");
+      }
+    } catch {
+      onToast("Failed to publish board", "error");
+    } finally {
+      setPublishing(false);
+      setPublishingBoardId(null);
+    }
   }
 
   function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
@@ -128,26 +168,37 @@ export default function SavedBoardsModal({
             <div className="flex flex-col gap-2">
               {[...savedBoards].reverse().map((b) => {
                 const isDeleting = deleteConfirmId === b.id;
+                const isPublishing = publishingBoardId === b.id;
+                const isPublished = publishedBoardIds.has(b.id);
                 return (
                   <div
                     key={b.id}
                     className={`rounded-xl border p-3 flex flex-col gap-2 ${
                       isDeleting
                         ? "bg-red-50 border-red-300"
+                        : isPublishing
+                        ? "bg-green-50 border-green-300"
                         : "bg-slate-50 border-slate-200"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold tracking-tight text-sm truncate text-slate-900">
-                          {b.name}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold tracking-tight text-sm truncate text-slate-900">
+                            {b.name}
+                          </p>
+                          {isPublished && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700">
+                              Published
+                            </span>
+                          )}
+                        </div>
                         <p className="text-slate-600 text-xs mt-0.5">
                           {b.board_data.columns.length} columns · {b.board_data.rowValues.length} rows · saved {formatDate(b.created_at)}
                         </p>
                       </div>
 
-                      {!isDeleting && (
+                      {!isDeleting && !isPublishing && (
                         <div className="flex gap-2 shrink-0">
                           <button
                             onClick={() => handleLoad(b.board_data, b.name)}
@@ -155,6 +206,14 @@ export default function SavedBoardsModal({
                           >
                             Load
                           </button>
+                          {!isPublished && (
+                            <button
+                              onClick={() => handleStartPublish(b.id, b.name)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-200 text-green-600 hover:bg-green-50 transition-all"
+                            >
+                              Publish
+                            </button>
+                          )}
                           <button
                             onClick={() => handleShare(b.id, b.name)}
                             className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 transition-all"
@@ -170,6 +229,42 @@ export default function SavedBoardsModal({
                         </div>
                       )}
                     </div>
+
+                  {isPublishing && (
+                    <div className="flex flex-col gap-2 pt-1">
+                      <input
+                        type="text"
+                        value={publishTitle}
+                        onChange={(e) => setPublishTitle(e.target.value)}
+                        placeholder="Board title"
+                        maxLength={50}
+                        className="w-full rounded-lg px-3 py-2 text-sm text-slate-900 bg-white border border-slate-200 focus:outline-none focus:border-green-400"
+                      />
+                      <textarea
+                        value={publishDescription}
+                        onChange={(e) => setPublishDescription(e.target.value)}
+                        placeholder="Description (optional)"
+                        maxLength={200}
+                        rows={2}
+                        className="w-full rounded-lg px-3 py-2 text-sm text-slate-900 bg-white border border-slate-200 focus:outline-none focus:border-green-400 resize-none"
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handlePublish}
+                          disabled={!publishTitle.trim() || publishing}
+                          className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 transition-all"
+                        >
+                          {publishing ? "Publishing..." : "Publish to Community"}
+                        </button>
+                        <button
+                          onClick={() => setPublishingBoardId(null)}
+                          className="px-4 py-1.5 rounded-lg text-xs font-semibold btn-secondary hover:bg-slate-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {isDeleting && (
                     <div className="flex items-center gap-3 pt-1">

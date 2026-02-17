@@ -1,127 +1,78 @@
 "use client";
 
-import { useState } from "react";
-import GameBoard from "./components/GameBoard";
-import CategoriesTab from "./components/CategoriesTab";
-import SetupTab from "./components/SetupTab";
-import FavoritesTab from "./components/FavoritesTab";
-import PlayerStatsTab from "./components/PlayerStatsTab";
-import ThemeSettingsTab from "./components/ThemeSettingsTab";
-import SoundSettingsTab from "./components/SoundSettingsTab";
-import KeyboardShortcutsTab from "./components/KeyboardShortcutsTab";
-import ChatBoardBuilder from "./components/ChatBoardBuilder";
-import DraftCategoriesTab from "./components/DraftCategoriesTab";
-import UserHeader from "./components/auth/UserHeader";
-import MigrationBanner from "./components/migration/MigrationBanner";
-import WelcomeModal from "@/components/help/WelcomeModal";
-import HelpModal from "@/components/help/HelpModal";
-import { useKeyboardShortcuts } from "@/lib/keyboard/useKeyboardShortcuts";
-import { useSoundEffects } from "@/lib/audio/useSoundEffects";
+import Link from "next/link";
+import UserHeader from "@/app/components/auth/UserHeader";
 
-type Tab = "game" | "setup" | "categories" | "favorites" | "stats" | "theme" | "sound" | "shortcuts" | "chat" | "drafts";
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: "game",       label: "Game" },
-  { id: "setup",      label: "Setup" },
-  { id: "chat",       label: "💬 Chat" },
-  { id: "drafts",     label: "📋 Drafts" },
-  { id: "categories", label: "Categories" },
-  { id: "stats",      label: "Stats" },
-  { id: "favorites",  label: "Favorites" },
-  { id: "theme",      label: "Theme" },
-  { id: "sound",      label: "Sound" },
-  { id: "shortcuts",  label: "Shortcuts" },
-];
-
-export default function Home() {
-  const [activeTab, setActiveTab] = useState<Tab>("game");
-  const [showHelp, setShowHelp] = useState(false);
-  const [soundToast, setSoundToast] = useState(false);
-  const { enabled: soundEnabled, setEnabled: setSoundEnabled } = useSoundEffects();
-
-  // Global keyboard shortcuts
-  useKeyboardShortcuts(
-    {
-      onToggleSound: () => {
-        setSoundEnabled(!soundEnabled);
-        setSoundToast(true);
-        setTimeout(() => setSoundToast(false), 2000);
-      },
-      onToggleHelp: () => setShowHelp(!showHelp),
-      onEscape: () => setShowHelp(false),
-    },
-    true
-  );
-
+export default function GameSelectPage() {
   return (
-    <>
-      <MigrationBanner />
-      <WelcomeModal />
-      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
-
-      <div className="min-h-screen w-full flex flex-col items-center py-8 px-4">
-        {/* Header with title and user */}
-        <div className="w-full max-w-7xl flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          Game Night
-        </h1>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowHelp(true)}
-            className="px-4 py-2 rounded-lg font-medium text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center gap-2"
-            title="Help & Guide"
-          >
-            ❓ Help
-          </button>
-          <UserHeader />
-        </div>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-4">
+      {/* User header */}
+      <div className="fixed top-4 right-4 z-10">
+        <UserHeader />
       </div>
 
-      {/* Pill-style tab navigation */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-1.5 mb-8 flex gap-1 shadow-sm">
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`
-              px-5 py-2 rounded-xl font-medium text-sm tracking-tight transition-all
-              ${activeTab === id
-                ? "text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-              }
-            `}
-            style={{
-              backgroundColor: activeTab === id ? "#D7FF2F" : "transparent",
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Title */}
+      <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-slate-900 mb-2 text-center">
+        Welcome to Game Night
+      </h1>
+      <p className="text-lg text-slate-500 mb-12 text-center">
+        Choose a game mode to get started
+      </p>
 
-      {/* Tab content */}
-      {activeTab === "game"       && <GameBoard />}
-      {activeTab === "setup"      && <SetupTab />}
-      {activeTab === "chat"       && <ChatBoardBuilder />}
-      {activeTab === "drafts"     && <DraftCategoriesTab />}
-      {activeTab === "categories" && <CategoriesTab />}
-      {activeTab === "stats"      && <PlayerStatsTab />}
-      {activeTab === "favorites"  && <FavoritesTab />}
-      {activeTab === "theme"      && <ThemeSettingsTab />}
-      {activeTab === "sound"      && <SoundSettingsTab />}
-      {activeTab === "shortcuts"  && <KeyboardShortcutsTab />}
-
-      {/* Sound toggle toast */}
-      {soundToast && (
-        <div
-          className="fixed bottom-8 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full bg-slate-900 text-white font-semibold shadow-lg z-50 flex items-center gap-2"
-          style={{ animation: "fadeIn 0.2s ease-out" }}
+      {/* Game mode tiles */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+        {/* Trivia Free-for-All */}
+        <Link
+          href="/trivia"
+          className="group rounded-2xl border border-slate-200 bg-white p-8 flex flex-col items-center text-center gap-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
         >
-          <span className="text-xl">{soundEnabled ? "🔊" : "🔇"}</span>
-          <span>Sound {soundEnabled ? "On" : "Off"}</span>
-        </div>
-      )}
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#D7FF2F] to-[#b8e600] flex items-center justify-center text-3xl font-bold text-slate-800 shadow-sm">
+            ?
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 group-hover:text-slate-700">
+            Trivia Free-for-All
+          </h2>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Build boards with AI, practice solo, and master your categories
+          </p>
+        </Link>
+
+        {/* Classic Jeopardy Live */}
+        <Link
+          href="/live"
+          className="group rounded-2xl border border-slate-200 bg-white p-8 flex flex-col items-center text-center gap-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#060CE9] to-[#3b3ff0] flex items-center justify-center text-3xl font-bold text-white shadow-sm">
+            !
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 group-hover:text-slate-700">
+            Classic Jeopardy Live
+          </h2>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Host or join a multiplayer game with friends
+          </p>
+        </Link>
+
+        {/* Community Boards */}
+        <Link
+          href="/community"
+          className="group rounded-2xl border border-slate-200 bg-white p-8 flex flex-col items-center text-center gap-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#f97316] to-[#ea580c] flex items-center justify-center text-3xl font-bold text-white shadow-sm">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M2 12h20" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 group-hover:text-slate-700">
+            Community Boards
+          </h2>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Browse and share boards created by the community
+          </p>
+        </Link>
       </div>
-    </>
+    </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { migrateLocalStorageToSupabase } from "./migrateLocalStorage";
+import { migrateLocalStorage, hasLocalStorageData } from "./migrateLocalStorage";
 
 export function useMigration() {
   const { user } = useAuth();
@@ -13,21 +13,13 @@ export function useMigration() {
   useEffect(() => {
     if (!user) {
       setMigrated(false);
+      setMigrating(false);
+      setError(null);
       return;
     }
 
     // Check if there's localStorage data to migrate
-    const hasLocalStorageData =
-      localStorage.getItem("triviaMasters.gameSettings.v1") ||
-      localStorage.getItem("triviaMasters.teams.v1") ||
-      localStorage.getItem("triviaMasters.playerStats.v1") ||
-      localStorage.getItem("TRIVIA_MASTERS_SAVED_BOARDS") ||
-      localStorage.getItem("trivia-masters-board") ||
-      localStorage.getItem("triviaMasters.categories.v1") ||
-      localStorage.getItem("TRIVIA_MASTERS_FAVORITES") ||
-      localStorage.getItem("TRIVIA_MASTERS_FACTCHECK_CACHE");
-
-    if (!hasLocalStorageData) {
+    if (!hasLocalStorageData()) {
       setMigrated(true);
       return;
     }
@@ -38,11 +30,13 @@ export function useMigration() {
       setError(null);
 
       try {
-        const result = await migrateLocalStorageToSupabase(user.id);
+        const result = await migrateLocalStorage(user.id);
 
         if (result.success) {
           setMigrated(true);
-          console.log("Migration successful:", result.itemsMigrated);
+          if (result.error !== "Already migrated") {
+            console.log("Migration successful:", result.itemsMigrated);
+          }
         } else {
           setError(result.error || "Migration failed");
         }

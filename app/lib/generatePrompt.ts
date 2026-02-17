@@ -5,7 +5,7 @@ import type { CategoryLibraryItem } from "../data/categoryLibrary";
  * This is the text sent to the AI provider (or the stub).
  */
 export function assemblePrompt(
-  category: CategoryLibraryItem,
+  category: Omit<CategoryLibraryItem, "createdAt">,
   rowValues: number[]
 ): string {
   const sorted = [...rowValues].sort((a, b) => a - b);

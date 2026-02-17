@@ -196,6 +196,10 @@ Generate ${rowValues.length} completely different, high-quality Jeopardy clues n
       }
     }
 
+    if (!items) {
+      throw new Error(`No items generated for "${categoryName}"`);
+    }
+
     // Normalize response format (handle both old and new formats)
     const normalizedItems = items.map(item => ({
       value: item.value,

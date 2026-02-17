@@ -34,7 +34,7 @@ export default function UserHeader() {
   const displayName = user.user_metadata?.display_name || user.email?.split("@")[0] || "User";
   const initials = displayName
     .split(" ")
-    .map((n) => n[0])
+    .map((n: string) => n[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);

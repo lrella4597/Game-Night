@@ -24,6 +24,8 @@ export interface BoardState {
   rowValues: number[];
   columns: Category[];
 }
+/** Alias used by Supabase-backed board persistence. */
+export type GameBoard = BoardState;
 
 /** The canonical default row values — used as a fallback. */
 export const POINT_VALUES = [100, 200, 300, 400, 500];

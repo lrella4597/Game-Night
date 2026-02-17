@@ -232,7 +232,7 @@ export default function QuestionModal({
   // ── Fact check ───────────────────────────────────────────────────────────────
   const [factChecking, setFactChecking] = useState(false);
   const [factResult, setFactResult] = useState<FactCheckResult | null>(() =>
-    getCachedFactCheck(question.question, question.answer)
+    getCachedFactCheck(question.question, question.answer) ?? null
   );
   const [factError, setFactError] = useState<string | null>(null);
   const [factExpanded, setFactExpanded] = useState(!!getCachedFactCheck(question.question, question.answer));
@@ -510,13 +510,13 @@ export default function QuestionModal({
                   </p>
 
                   {/* Supporting facts */}
-                  {factResult.supporting_facts.length > 0 && (
+                  {factResult.supportingFacts && factResult.supportingFacts.length > 0 && (
                     <div>
                       <p className="text-xs font-semibold tracking-tight uppercase mb-1.5 text-slate-600">
                         Supporting Facts
                       </p>
                       <ul className="flex flex-col gap-1">
-                        {factResult.supporting_facts.map((f, i) => (
+                        {factResult.supportingFacts.map((f, i) => (
                           <li key={i} className="text-sm text-slate-700 flex gap-2">
                             <span className="text-slate-400 flex-shrink-0">•</span>
                             {f}
@@ -527,13 +527,13 @@ export default function QuestionModal({
                   )}
 
                   {/* Common confusions */}
-                  {factResult.common_confusions && factResult.common_confusions.length > 0 && (
+                  {factResult.commonConfusions && factResult.commonConfusions.length > 0 && (
                     <div>
                       <p className="text-xs font-semibold tracking-tight uppercase mb-1.5 text-red-600">
                         Common Confusions
                       </p>
                       <ul className="flex flex-col gap-1">
-                        {factResult.common_confusions.map((c, i) => (
+                        {factResult.commonConfusions.map((c, i) => (
                           <li key={i} className="text-sm text-slate-700 flex gap-2">
                             <span className="text-red-400 flex-shrink-0">•</span>
                             {c}

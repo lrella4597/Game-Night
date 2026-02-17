@@ -35,7 +35,7 @@ export default function ThemeSettingsTab() {
       initialThemeRef.current = currentTheme;
       setTimeout(() => setSaveMessage(null), 3000);
     } else {
-      setSaveMessage({ text: result.error || "Failed to save theme", type: "error" });
+      setSaveMessage({ text: (result as any).error || "Failed to save theme", type: "error" });
     }
 
     setSaving(false);
