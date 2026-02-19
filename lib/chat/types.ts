@@ -129,3 +129,41 @@ export interface ChatConversation {
   createdAt: number;
   updatedAt: number;
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Customize Today Types (Day of Deception)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export interface MissionPackItem {
+  id: string;
+  text: string;
+  category: "social" | "conversational" | "sneaky";
+  riskLevel: "low" | "medium" | "high";
+  tags: string[];
+  locked?: boolean;
+}
+
+export interface EventPackItem {
+  id: string;
+  name: string;
+  instructions: string;
+  durationMinutes: number;
+  deceiverSecretMission?: string;
+  tags: string[];
+  locked?: boolean;
+}
+
+export interface ContextSummary {
+  theme: string;
+  setting: string;
+  playerCount?: number;
+  additionalNotes?: string;
+  conversationHistory: string;
+}
+
+export interface CustomizeTodayResponse {
+  assistant_message: string;
+  mission_pack: MissionPackItem[];
+  event_pack: EventPackItem[];
+  context_summary: ContextSummary;
+}

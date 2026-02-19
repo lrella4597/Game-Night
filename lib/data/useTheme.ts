@@ -29,9 +29,9 @@ export const PRESET_THEMES: Theme[] = [
       foreground: "#0B1220",
       accent: "#D7FF2F",
       boardBackground: "#F7F8FA",
-      tileBackground: "#0B1220",
-      tileText: "#FFFFFF",
-      tileBorder: "#1E293B",
+      tileBackground: "#D7FF2F",
+      tileText: "#0B1220",
+      tileBorder: "#B8E600",
       cardBackground: "#FFFFFF",
       cardBorder: "#E2E8F0",
     },
@@ -148,6 +148,20 @@ export function useTheme() {
   const [currentTheme, setCurrentTheme] = useState<Theme>(PRESET_THEMES[0]);
   const [loading, setLoading] = useState(true);
 
+  // Detect stale cached theme with old dark tile defaults and refresh to new lime defaults.
+  // If the user had the old default (dark tiles + lime accent), upgrade to the new default.
+  function refreshIfStaleDefault(theme: Theme): Theme {
+    const isOldDefault =
+      theme.colors.tileBackground === "#0B1220" &&
+      theme.colors.accent === "#D7FF2F";
+    if (isOldDefault) {
+      // Clear the stale cache
+      try { localStorage.removeItem("trivia_masters_theme"); } catch {}
+      return PRESET_THEMES[0];
+    }
+    return theme;
+  }
+
   useEffect(() => {
     if (!user) {
       setCurrentTheme(PRESET_THEMES[0]);
@@ -180,7 +194,7 @@ export function useTheme() {
         const localTheme = localStorage.getItem("trivia_masters_theme");
         if (localTheme) {
           try {
-            const parsedTheme = JSON.parse(localTheme);
+            const parsedTheme = refreshIfStaleDefault(JSON.parse(localTheme));
             setCurrentTheme(parsedTheme);
             setLoading(false);
             return;
@@ -206,7 +220,7 @@ export function useTheme() {
         const localTheme = localStorage.getItem("trivia_masters_theme");
         if (localTheme) {
           try {
-            const parsedTheme = JSON.parse(localTheme);
+            const parsedTheme = refreshIfStaleDefault(JSON.parse(localTheme));
             setCurrentTheme(parsedTheme);
           } catch {
             setCurrentTheme(PRESET_THEMES[0]);
@@ -220,7 +234,7 @@ export function useTheme() {
       const localTheme = localStorage.getItem("trivia_masters_theme");
       if (localTheme) {
         try {
-          const parsedTheme = JSON.parse(localTheme);
+          const parsedTheme = refreshIfStaleDefault(JSON.parse(localTheme));
           setCurrentTheme(parsedTheme);
         } catch {
           setCurrentTheme(PRESET_THEMES[0]);

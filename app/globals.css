@@ -8,9 +8,9 @@
 
   /* Board colors */
   --board-background: #F7F8FA;
-  --tile-background: #0B1220;
-  --tile-text: #FFFFFF;
-  --tile-border: #1E293B;
+  --tile-background: #D7FF2F;
+  --tile-text: #0B1220;
+  --tile-border: #B8E600;
 
   /* Card colors */
   --card-background: #FFFFFF;
@@ -97,4 +97,78 @@ body {
   z-index: 9999;
   animation: confettiFall 3s linear;
   pointer-events: none;
+}
+
+/* ── Chalkboard animations (Day of Deception) ────────────────────────────── */
+
+@keyframes chalkDraw {
+  from {
+    stroke-dashoffset: 100;
+    opacity: 0.3;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 0.85;
+  }
+}
+
+@keyframes chalkUnderline {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 100%;
+    opacity: 0.8;
+  }
+}
+
+@keyframes chalkDustSettle {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px);
+    filter: blur(2px);
+  }
+  60% {
+    opacity: 0.9;
+    filter: blur(0.5px);
+  }
+  100% {
+    opacity: 0.85;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes chalkFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.chalk-draw {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: chalkDraw 0.8s ease-out forwards;
+}
+
+.chalk-text-appear {
+  animation: chalkDustSettle 0.6s ease-out forwards;
+}
+
+.chalk-underline::after {
+  content: '';
+  display: block;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.6);
+  animation: chalkUnderline 0.4s ease-out forwards;
+}
+
+.chalk-fade-in {
+  animation: chalkFadeIn 0.5s ease-out forwards;
 }

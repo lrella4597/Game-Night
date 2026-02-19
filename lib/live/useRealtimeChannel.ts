@@ -19,6 +19,7 @@ interface UseRealtimeChannelOptions {
   userId: string;
   userName: string;
   isHost: boolean;
+  channelName?: string;
 }
 
 export function useRealtimeChannel({
@@ -26,6 +27,7 @@ export function useRealtimeChannel({
   userId,
   userName,
   isHost,
+  channelName: channelNameOverride,
 }: UseRealtimeChannelOptions) {
   const [connected, setConnected] = useState(false);
   const [presenceState, setPresenceState] = useState<PresenceState>({});
@@ -36,7 +38,7 @@ export function useRealtimeChannel({
   useEffect(() => {
     if (!sessionId || !userId) return;
 
-    const channelName = getChannelName(sessionId);
+    const channelName = channelNameOverride ?? getChannelName(sessionId);
     const channel = supabase.channel(channelName, {
       config: { broadcast: { self: false }, presence: { key: userId } },
     });

@@ -6,8 +6,19 @@ import UserHeader from "@/app/components/auth/UserHeader";
 export default function GameSelectPage() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-4">
-      {/* User header */}
-      <div className="fixed top-4 right-4 z-10">
+      {/* Top-right header area */}
+      <div className="fixed top-4 right-4 z-10 flex items-center gap-3">
+        <Link
+          href="/community"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all text-sm font-medium text-slate-600 hover:text-slate-900"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M2 12h20" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+          Community Boards
+        </Link>
         <UserHeader />
       </div>
 
@@ -53,23 +64,30 @@ export default function GameSelectPage() {
           </p>
         </Link>
 
-        {/* Community Boards */}
+        {/* Day of Deception */}
         <Link
-          href="/community"
+          href="/day-of-deception"
           className="group rounded-2xl border border-slate-200 bg-white p-8 flex flex-col items-center text-center gap-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
         >
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#f97316] to-[#ea580c] flex items-center justify-center text-3xl font-bold text-white shadow-sm">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M2 12h20" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#dc2626] to-[#991b1b] flex items-center justify-center text-white shadow-sm">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {/* Dagger blade */}
+              <path d="M12 2L14.5 10H9.5L12 2Z" fill="currentColor" stroke="none" />
+              {/* Blade center line */}
+              <path d="M12 2v10" />
+              {/* Crossguard */}
+              <path d="M7 12h10" strokeWidth="2.5" />
+              {/* Grip */}
+              <path d="M12 12v8" strokeWidth="2" />
+              {/* Pommel */}
+              <circle cx="12" cy="21" r="1" fill="currentColor" />
             </svg>
           </div>
           <h2 className="text-xl font-bold text-slate-900 group-hover:text-slate-700">
-            Community Boards
+            Day of Deception
           </h2>
           <p className="text-sm text-slate-500 leading-relaxed">
-            Browse and share boards created by the community
+            All-day social deduction with missions and a final roundtable vote
           </p>
         </Link>
       </div>

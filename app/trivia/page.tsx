@@ -17,6 +17,7 @@ import WelcomeModal from "@/components/help/WelcomeModal";
 import HelpModal from "@/components/help/HelpModal";
 import { useKeyboardShortcuts } from "@/lib/keyboard/useKeyboardShortcuts";
 import { useSoundEffects } from "@/lib/audio/useSoundEffects";
+import { useTheme } from "@/lib/data/useTheme";
 import Link from "next/link";
 
 type Tab = "game" | "setup" | "categories" | "favorites" | "stats" | "theme" | "sound" | "shortcuts" | "chat" | "drafts";
@@ -39,6 +40,9 @@ export default function TriviaPage() {
   const [showHelp, setShowHelp] = useState(false);
   const [soundToast, setSoundToast] = useState(false);
   const { enabled: soundEnabled, setEnabled: setSoundEnabled } = useSoundEffects();
+
+  // Apply saved theme on page load (sets CSS variables)
+  useTheme();
 
   // Global keyboard shortcuts
   useKeyboardShortcuts(

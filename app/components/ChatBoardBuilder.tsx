@@ -53,7 +53,9 @@ export default function ChatBoardBuilder() {
         };
 
         recognition.onerror = (event: any) => {
-          console.error("Speech recognition error:", event.error);
+          if (event.error !== "network" && event.error !== "aborted") {
+            console.warn("Speech recognition error:", event.error);
+          }
           setIsListening(false);
         };
 
