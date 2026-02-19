@@ -31,7 +31,13 @@ export default function UserHeader() {
     );
   }
 
-  const displayName = user.user_metadata?.display_name || user.email?.split("@")[0] || "User";
+  const displayName =
+    user.user_metadata?.display_name ||
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.email?.split("@")[0] ||
+    "User";
+  const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
   const initials = displayName
     .split(" ")
     .map((n: string) => n[0])
@@ -45,9 +51,18 @@ export default function UserHeader() {
         onClick={() => setShowDropdown(!showDropdown)}
         className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 transition-all"
       >
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-          {initials}
-        </div>
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={displayName}
+            className="w-8 h-8 rounded-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+            {initials}
+          </div>
+        )}
         <div className="text-left hidden sm:block">
           <div className="text-sm font-semibold text-slate-900">{displayName}</div>
           <div className="text-xs text-slate-500">{user.email}</div>
