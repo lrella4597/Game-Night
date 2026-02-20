@@ -7,6 +7,7 @@ import { useRealtimeChannel } from "@/lib/live/useRealtimeChannel";
 import { usePlayerControls } from "@/lib/live/usePlayerControls";
 import { HOST_EVENTS, PLAYER_EVENTS } from "@/lib/live/channelEvents";
 import { useLiveTimer } from "@/lib/live/useLiveTimer";
+import LiveTimer from "@/app/components/live/shared/LiveTimer";
 import PlayerLobby from "@/app/components/live/player/PlayerLobby";
 import PlayerBuzzer from "@/app/components/live/player/PlayerBuzzer";
 import PlayerWaiting from "@/app/components/live/player/PlayerWaiting";
@@ -30,24 +31,59 @@ export default function PlayerGamePage() {
   const [hasBuzzed, setHasBuzzed] = useState(false);
   const [currentScore, setCurrentScore] = useState(0);
   const [scoreDelta, setScoreDelta] = useState<{ delta: number; correct: boolean } | null>(null);
+  const [reconnecting, setReconnecting] = useState(false);
 
   const [playerId, setPlayerId] = useState<string>("");
   const [playerName, setPlayerName] = useState<string>("");
 
+  // Clue display state (Phase 3)
+  const [currentClueText, setCurrentClueText] = useState<string>("");
+  const [currentCategoryTitle, setCurrentCategoryTitle] = useState<string>("");
+  const [currentClueValue, setCurrentClueValue] = useState<number>(0);
+
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
+  // Validate and rejoin on mount using localStorage
   useEffect(() => {
-    const storedId = sessionStorage.getItem(`live-player-id-${sessionId}`);
-    const storedName = sessionStorage.getItem(`live-player-name-${sessionId}`);
+    async function initPlayer() {
+      const storedId = localStorage.getItem(`live-player-id-${sessionId}`);
+      const storedName = localStorage.getItem(`live-player-name-${sessionId}`);
 
-    if (!storedId || !storedName) {
-      router.push("/live/play");
-      return;
+      if (!storedId || !storedName) {
+        router.push("/live/play");
+        return;
+      }
+
+      // Attempt rejoin to validate session is still active
+      try {
+        const res = await fetch("/api/live/rejoin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ playerId: storedId, sessionId }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setPlayerId(data.playerId);
+          setPlayerName(data.playerName);
+          if (data.currentPhase) setPhase(data.currentPhase);
+        } else {
+          // Session ended or player removed — clean up and redirect
+          localStorage.removeItem(`live-player-id-${sessionId}`);
+          localStorage.removeItem(`live-player-name-${sessionId}`);
+          localStorage.removeItem(`live-player-token-${sessionId}`);
+          router.push("/live/play");
+          return;
+        }
+      } catch {
+        // Network error — use stored values and hope for the best
+        setPlayerId(storedId);
+        setPlayerName(storedName);
+      }
     }
 
-    setPlayerId(storedId);
-    setPlayerName(storedName);
+    initPlayer();
   }, [sessionId, router]);
 
   const { connected, broadcast, onBroadcast } = useRealtimeChannel({
@@ -69,8 +105,15 @@ export default function PlayerGamePage() {
   const [ddCategory, setDdCategory] = useState<string>("");
   const [ddMaxClueValue, setDdMaxClueValue] = useState<number>(500);
 
-  // Timer for final drawing
+  // Timer for buzzer countdown + final drawing
   const { remaining: timerRemaining, running: timerRunning, startTimer } = useLiveTimer({});
+
+  // Reconnection banner: show when disconnected
+  useEffect(() => {
+    if (playerId && !loading) {
+      setReconnecting(!connected);
+    }
+  }, [connected, playerId, loading]);
 
   // Notify host when connected
   useEffect(() => {
@@ -139,6 +182,23 @@ export default function PlayerGamePage() {
         setScoreDelta(null);
         setDdPlayerId(null);
       }
+      // Clear clue text when returning to board
+      if (data.phase === "board_select") {
+        setCurrentClueText("");
+        setCurrentCategoryTitle("");
+        setCurrentClueValue(0);
+      }
+    });
+  }, [onBroadcast]);
+
+  // Listen for clue selection (Phase 3: receive clue text)
+  useEffect(() => {
+    if (!onBroadcast) return;
+    return onBroadcast(HOST_EVENTS.CLUE_SELECT, (payload: unknown) => {
+      const data = payload as { catIdx: number; clueIdx: number; value: number; clueText?: string; categoryTitle?: string };
+      if (data.clueText) setCurrentClueText(data.clueText);
+      if (data.categoryTitle) setCurrentCategoryTitle(data.categoryTitle);
+      if (data.value) setCurrentClueValue(data.value);
     });
   }, [onBroadcast]);
 
@@ -211,8 +271,9 @@ export default function PlayerGamePage() {
     return onBroadcast(HOST_EVENTS.PLAYER_KICKED, (payload: unknown) => {
       const data = payload as { playerId: string };
       if (data.playerId === playerId) {
-        sessionStorage.removeItem(`live-player-id-${sessionId}`);
-        sessionStorage.removeItem(`live-player-name-${sessionId}`);
+        localStorage.removeItem(`live-player-id-${sessionId}`);
+        localStorage.removeItem(`live-player-name-${sessionId}`);
+        localStorage.removeItem(`live-player-token-${sessionId}`);
         router.push("/live/play");
       }
     });
@@ -228,7 +289,7 @@ export default function PlayerGamePage() {
     });
   }, [onBroadcast]);
 
-  // Listen for timer starts (used for final drawing countdown)
+  // Listen for timer starts (buzzer countdown + final drawing)
   useEffect(() => {
     if (!onBroadcast) return;
     return onBroadcast(HOST_EVENTS.TIMER_START, (payload: unknown) => {
@@ -334,6 +395,14 @@ export default function PlayerGamePage() {
   return (
     <div className="flex flex-col min-h-screen">
       <div className="fixed top-4 right-4 z-40">{jeopardyPlayerHelp}</div>
+
+      {/* Reconnecting banner */}
+      {reconnecting && (
+        <div className="bg-yellow-500 text-black text-center text-sm font-semibold py-2 px-4">
+          Reconnecting...
+        </div>
+      )}
+
       {/* Score header */}
       <div className="bg-black/30 px-4 py-3 flex items-center justify-between">
         <span className="text-white font-medium">{playerName}</span>
@@ -366,14 +435,55 @@ export default function PlayerGamePage() {
           <PlayerWaiting message="Host is selecting a clue..." player={currentPlayer} />
         )}
 
-        {/* Clue display - waiting for buzzer */}
+        {/* Clue display - show clue text to players */}
         {phase === "clue_display" && (
-          <PlayerWaiting message="Reading clue... get ready to buzz!" player={currentPlayer} />
+          currentClueText ? (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-6">
+              <div className="text-center">
+                {currentCategoryTitle && (
+                  <p className="text-blue-300 text-sm font-semibold uppercase tracking-wider mb-1">
+                    {currentCategoryTitle} — ${currentClueValue}
+                  </p>
+                )}
+                <p className="text-white text-xl font-semibold leading-relaxed">
+                  {currentClueText}
+                </p>
+              </div>
+              <p className="text-yellow-300 text-sm animate-pulse mt-4">
+                Get ready to buzz!
+              </p>
+            </div>
+          ) : (
+            <PlayerWaiting message="Reading clue... get ready to buzz!" player={currentPlayer} />
+          )
         )}
 
-        {/* Buzzer open */}
+        {/* Buzzer open - show clue + timer + buzzer */}
         {phase === "buzzer_open" && (
-          <PlayerBuzzer buzzerOpen onBuzz={handleBuzz} hasBuzzed={hasBuzzed} />
+          <div className="flex flex-col min-h-[60vh]">
+            {/* Clue text + timer at top */}
+            {currentClueText && (
+              <div className="px-6 pt-4 pb-2 text-center">
+                {currentCategoryTitle && (
+                  <p className="text-blue-300 text-xs font-semibold uppercase tracking-wider mb-1">
+                    {currentCategoryTitle} — ${currentClueValue}
+                  </p>
+                )}
+                <p className="text-white text-lg font-semibold leading-relaxed">
+                  {currentClueText}
+                </p>
+                {timerRunning && (
+                  <div className="mt-2">
+                    <LiveTimer remaining={timerRemaining} running={timerRunning} />
+                  </div>
+                )}
+              </div>
+            )}
+            {/* Buzzer */}
+            <div className="flex-1">
+              <PlayerBuzzer buzzerOpen onBuzz={handleBuzz} hasBuzzed={hasBuzzed} />
+            </div>
+          </div>
         )}
 
         {/* Answer check */}
@@ -454,7 +564,13 @@ export default function PlayerGamePage() {
               Final Score: ${currentScore.toLocaleString()}
             </p>
             <button
-              onClick={() => router.push("/live")}
+              onClick={() => {
+                // Clean up localStorage for this session
+                localStorage.removeItem(`live-player-id-${sessionId}`);
+                localStorage.removeItem(`live-player-name-${sessionId}`);
+                localStorage.removeItem(`live-player-token-${sessionId}`);
+                router.push("/live");
+              }}
               className="mt-4 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
             >
               Back

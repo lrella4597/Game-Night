@@ -11,6 +11,7 @@ export default function PlayerJoinForm() {
   const [name, setName] = useState("");
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkingRejoin, setCheckingRejoin] = useState(true);
 
   // Pre-fill code from URL query param (from QR scan)
   useEffect(() => {
@@ -19,6 +20,49 @@ export default function PlayerJoinForm() {
       setCode(urlCode.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6));
     }
   }, [searchParams]);
+
+  // Auto-rejoin: check localStorage for existing session
+  useEffect(() => {
+    async function tryAutoRejoin() {
+      try {
+        // Find any stored player sessions
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (!key?.startsWith("live-player-id-")) continue;
+
+          const storedSessionId = key.replace("live-player-id-", "");
+          const storedPlayerId = localStorage.getItem(key);
+          if (!storedPlayerId) continue;
+
+          // Try to rejoin
+          const res = await fetch("/api/live/rejoin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              playerId: storedPlayerId,
+              sessionId: storedSessionId,
+            }),
+          });
+
+          if (res.ok) {
+            // Session still active — redirect back to game
+            router.push(`/live/play/${storedSessionId}`);
+            return;
+          }
+
+          // Session ended or player removed — clean up stale data
+          localStorage.removeItem(`live-player-id-${storedSessionId}`);
+          localStorage.removeItem(`live-player-name-${storedSessionId}`);
+          localStorage.removeItem(`live-player-token-${storedSessionId}`);
+        }
+      } catch {
+        // Network error, fall through to normal join form
+      }
+      setCheckingRejoin(false);
+    }
+
+    tryAutoRejoin();
+  }, [router]);
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
@@ -43,10 +87,10 @@ export default function PlayerJoinForm() {
         throw new Error(data.error || "Failed to join game");
       }
 
-      // Store player info in sessionStorage for the game page
-      sessionStorage.setItem(`live-player-id-${data.sessionId}`, data.playerId);
-      sessionStorage.setItem(`live-player-name-${data.sessionId}`, name.trim());
-      sessionStorage.setItem(`live-player-token-${data.sessionId}`, data.playerToken);
+      // Store player info in localStorage (survives tab close / phone lock)
+      localStorage.setItem(`live-player-id-${data.sessionId}`, data.playerId);
+      localStorage.setItem(`live-player-name-${data.sessionId}`, name.trim());
+      localStorage.setItem(`live-player-token-${data.sessionId}`, data.playerToken);
 
       router.push(`/live/play/${data.sessionId}`);
     } catch (err) {
@@ -59,6 +103,14 @@ export default function PlayerJoinForm() {
     const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
     setCode(cleaned);
     setError(null);
+  }
+
+  if (checkingRejoin) {
+    return (
+      <div className="w-full max-w-sm flex items-center justify-center py-12">
+        <p className="text-blue-200 animate-pulse">Checking for active game...</p>
+      </div>
+    );
   }
 
   return (

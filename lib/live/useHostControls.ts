@@ -50,7 +50,7 @@ export function useHostControls({ sessionId, broadcast }: UseHostControlsOptions
   );
 
   const selectClue = useCallback(
-    async (catIdx: number, clueIdx: number, value: number, cluesRevealed: string[]) => {
+    async (catIdx: number, clueIdx: number, value: number, cluesRevealed: string[], clueText?: string, categoryTitle?: string) => {
       const clueKey = `${catIdx}-${clueIdx}`;
       const newRevealed = [...cluesRevealed, clueKey];
 
@@ -66,7 +66,7 @@ export function useHostControls({ sessionId, broadcast }: UseHostControlsOptions
         lastAction: `clue:${catIdx}-${clueIdx}`,
       });
 
-      broadcast(HOST_EVENTS.CLUE_SELECT, { catIdx, clueIdx, value });
+      broadcast(HOST_EVENTS.CLUE_SELECT, { catIdx, clueIdx, value, clueText, categoryTitle });
       broadcast(HOST_EVENTS.PHASE_CHANGE, { phase: "clue_display" });
     },
     [updateGameState, broadcast]
@@ -262,7 +262,9 @@ export function useHostControls({ sessionId, broadcast }: UseHostControlsOptions
       value: number,
       cluesRevealed: string[],
       ddPlayerId: string,
-      playerName: string
+      playerName: string,
+      clueText?: string,
+      categoryTitle?: string
     ) => {
       const clueKey = `${catIdx}-${clueIdx}`;
       const newRevealed = [...cluesRevealed, clueKey];
@@ -279,7 +281,7 @@ export function useHostControls({ sessionId, broadcast }: UseHostControlsOptions
         lastAction: `daily_double:${catIdx}-${clueIdx}`,
       });
 
-      broadcast(HOST_EVENTS.CLUE_SELECT, { catIdx, clueIdx, value });
+      broadcast(HOST_EVENTS.CLUE_SELECT, { catIdx, clueIdx, value, clueText, categoryTitle });
       broadcast(HOST_EVENTS.DAILY_DOUBLE, { playerId: ddPlayerId, playerName, catIdx, clueIdx });
       broadcast(HOST_EVENTS.PHASE_CHANGE, { phase: "daily_double_wager" });
     },

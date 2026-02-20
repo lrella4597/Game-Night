@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { useRealtimeChannel } from "@/lib/live/useRealtimeChannel";
-import { HOST_EVENTS, PLAYER_EVENTS } from "@/lib/live/channelEvents";
+import { HOST_EVENTS, PLAYER_EVENTS, COMPANION_EVENTS } from "@/lib/live/channelEvents";
 import { useHostControls } from "@/lib/live/useHostControls";
 import { useLiveTimer } from "@/lib/live/useLiveTimer";
 import HostLobby from "@/app/components/live/host/HostLobby";
@@ -25,6 +25,7 @@ import { isDailyDouble, generateDailyDoubles } from "@/lib/live/dailyDoubleUtils
 import { useSoundEffects } from "@/lib/audio/useSoundEffects";
 import { useThinkMusic } from "@/lib/audio/useThinkMusic";
 import HowToPlayModal from "@/app/components/HowToPlayModal";
+import { QRCodeSVG } from "qrcode.react";
 import type {
   LiveSession,
   LivePlayer,
@@ -65,6 +66,7 @@ export default function HostPage() {
   const [prepDjBoard, setPrepDjBoard] = useState<BoardState | null>(null);
   const [boardControllerId, setBoardControllerId] = useState<string | null>(null);
   const [ddWager, setDdWager] = useState<number | null>(null);
+  const [showCompanionQR, setShowCompanionQR] = useState(false);
 
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
@@ -253,6 +255,57 @@ export default function HostPage() {
     });
   }, [onBroadcast]);
 
+  // ── Listen for Companion commands ────────────────────────────────────────
+
+  useEffect(() => {
+    if (!onBroadcast) return;
+    return onBroadcast(COMPANION_EVENTS.OPEN_BUZZER, () => {
+      handleOpenBuzzer();
+    });
+  }, [onBroadcast]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!onBroadcast) return;
+    return onBroadcast(COMPANION_EVENTS.JUDGE_CORRECT, () => {
+      handleCorrect();
+    });
+  }, [onBroadcast]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!onBroadcast) return;
+    return onBroadcast(COMPANION_EVENTS.JUDGE_INCORRECT, () => {
+      handleIncorrect();
+    });
+  }, [onBroadcast]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!onBroadcast) return;
+    return onBroadcast(COMPANION_EVENTS.SKIP_CLUE, () => {
+      handleSkip();
+    });
+  }, [onBroadcast]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!onBroadcast) return;
+    return onBroadcast(COMPANION_EVENTS.DD_SHOW_CLUE, () => {
+      handleDdShowClue();
+    });
+  }, [onBroadcast]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!onBroadcast) return;
+    return onBroadcast(COMPANION_EVENTS.DD_CORRECT, () => {
+      handleDdCorrect();
+    });
+  }, [onBroadcast]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!onBroadcast) return;
+    return onBroadcast(COMPANION_EVENTS.DD_INCORRECT, () => {
+      handleDdIncorrect();
+    });
+  }, [onBroadcast]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Board Prep actions ────────────────────────────────────────────────────
 
   async function handlePrepBoard(boardData: BoardState, djBoard?: BoardState) {
@@ -380,9 +433,12 @@ export default function HostPage() {
       setDdWager(null);
       playSound("daily-double");
 
+      const ddQuestion = board?.columns[catIdx]?.questions[clueIdx];
+      const ddCategoryObj = board?.columns[catIdx];
       hostControls.selectDailyDouble(
         catIdx, clueIdx, value, gameState.cluesRevealed,
-        ddPlayerId, ddPlayer?.displayName || "Player"
+        ddPlayerId, ddPlayer?.displayName || "Player",
+        ddQuestion?.question, ddCategoryObj?.title
       );
       setGameState((prev) =>
         prev
@@ -404,7 +460,9 @@ export default function HostPage() {
 
     // Normal clue selection
     playSound("clue-select");
-    hostControls.selectClue(catIdx, clueIdx, value, gameState.cluesRevealed);
+    const question = board?.columns[catIdx]?.questions[clueIdx];
+    const category = board?.columns[catIdx];
+    hostControls.selectClue(catIdx, clueIdx, value, gameState.cluesRevealed, question?.question, category?.title);
     setGameState((prev) =>
       prev
         ? {
@@ -426,6 +484,7 @@ export default function HostPage() {
     hostControls.openBuzzer();
     const timerDuration = session?.config.clueTimerSeconds || 30;
     startTimer(timerDuration);
+    broadcast(HOST_EVENTS.TIMER_START, { durationSeconds: timerDuration });
     playSound("buzzer-open");
     startThinkMusic(timerDuration);
     setGameState((prev) =>
@@ -759,8 +818,55 @@ export default function HostPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <div className="fixed top-4 right-4 z-40">{jeopardyHostHelp}</div>
+      <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
+        {session.hostCompanionToken && (
+          <button
+            onClick={() => setShowCompanionQR(true)}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all"
+          >
+            Phone Controls
+          </button>
+        )}
+        {jeopardyHostHelp}
+      </div>
       <LiveSoundControls />
+
+      {/* Companion QR Modal */}
+      {showCompanionQR && session.hostCompanionToken && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          onClick={() => setShowCompanionQR(false)}
+        >
+          <div
+            className="bg-[#060CE9] rounded-2xl p-8 max-w-sm w-full mx-4 flex flex-col items-center gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-[#FFD700]">Host Companion</h3>
+            <p className="text-blue-200 text-sm text-center">
+              Scan this QR code with your phone to get private answer viewing and game controls.
+            </p>
+            <div className="bg-white p-4 rounded-xl">
+              <QRCodeSVG
+                value={`${typeof window !== "undefined" ? window.location.origin : ""}/live/host-companion/${sessionId}?token=${session.hostCompanionToken}`}
+                size={200}
+                bgColor="#ffffff"
+                fgColor="#060CE9"
+                level="M"
+              />
+            </div>
+            <p className="text-blue-300/60 text-[10px] text-center break-all">
+              {typeof window !== "undefined" ? window.location.origin : ""}/live/host-companion/{sessionId}
+            </p>
+            <button
+              onClick={() => setShowCompanionQR(false)}
+              className="px-6 py-2 rounded-lg font-semibold text-sm bg-white/10 hover:bg-white/20 text-white transition-all"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1">
         {/* Round intro */}
         {phase === "round_intro" && (

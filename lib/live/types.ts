@@ -51,6 +51,7 @@ export interface LiveSession {
   doubleJeopardyBoard: BoardState | null;
   finalJeopardy: FinalJeopardyData | null;
   config: LiveSessionConfig;
+  hostCompanionToken: string | null;
   createdAt: string;
   startedAt: string | null;
   finishedAt: string | null;
@@ -143,7 +144,7 @@ export type HostEvent =
   | { type: "TIMER_RESUME" }
   | { type: "SCORE_UPDATE"; payload: { playerId: string; newScore: number; delta: number } }
   | { type: "PLAYER_KICKED"; payload: { playerId: string } }
-  | { type: "CLUE_SELECT"; payload: { catIdx: number; clueIdx: number; value: number } }
+  | { type: "CLUE_SELECT"; payload: { catIdx: number; clueIdx: number; value: number; clueText?: string; categoryTitle?: string } }
   | { type: "ANSWER_RESULT"; payload: { playerId: string; correct: boolean; delta: number } }
   | { type: "FINAL_REVEAL_NEXT" }
   | { type: "GAME_OVER" };
@@ -164,6 +165,7 @@ export interface CreateSessionRequest {
 export interface CreateSessionResponse {
   sessionId: string;
   joinCode: string;
+  hostCompanionToken: string;
 }
 
 export interface JoinSessionRequest {
@@ -193,6 +195,7 @@ export interface LiveSessionRow {
   final_timer_seconds: number;
   wager_timer_seconds: number;
   max_players: number;
+  host_companion_token: string | null;
   created_at: string;
   updated_at: string;
   started_at: string | null;
@@ -257,6 +260,7 @@ export function sessionFromRow(row: LiveSessionRow): LiveSession {
       wagerTimerSeconds: row.wager_timer_seconds,
       maxPlayers: row.max_players,
     },
+    hostCompanionToken: row.host_companion_token,
     createdAt: row.created_at,
     startedAt: row.started_at,
     finishedAt: row.finished_at,

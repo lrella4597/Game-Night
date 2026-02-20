@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { generateJoinCode } from "@/lib/live/joinCodeUtils";
 import type { CreateSessionRequest, LiveSessionConfig } from "@/lib/live/types";
@@ -51,10 +52,12 @@ export async function POST(req: Request) {
     }
 
     // Create session
+    const hostCompanionToken = randomUUID();
     const insertData: Record<string, unknown> = {
       host_id: user.id,
       join_code: joinCode,
       status: "lobby",
+      host_companion_token: hostCompanionToken,
       enable_double_jeopardy: config.enableDoubleJeopardy,
       buzzer_lockout_ms: config.buzzerLockoutMs,
       clue_timer_seconds: config.clueTimerSeconds,
@@ -110,6 +113,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       sessionId: session.id,
       joinCode,
+      hostCompanionToken,
     });
   } catch (err) {
     console.error("Create session error:", err);

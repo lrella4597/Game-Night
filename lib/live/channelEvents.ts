@@ -27,6 +27,17 @@ export const PLAYER_EVENTS = {
   DD_WAGER: "dd_wager",
 } as const;
 
+// Companion → Host (companion sends commands; host page executes them)
+export const COMPANION_EVENTS = {
+  OPEN_BUZZER: "companion_open_buzzer",
+  JUDGE_CORRECT: "companion_judge_correct",
+  JUDGE_INCORRECT: "companion_judge_incorrect",
+  SKIP_CLUE: "companion_skip_clue",
+  DD_SHOW_CLUE: "companion_dd_show_clue",
+  DD_CORRECT: "companion_dd_correct",
+  DD_INCORRECT: "companion_dd_incorrect",
+} as const;
+
 export function getChannelName(sessionId: string): string {
   return `live-game:${sessionId}`;
 }

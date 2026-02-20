@@ -47,9 +47,40 @@ export async function POST(req: Request) {
       );
     }
 
+    // If game already started, allow reconnection by same name
     if (session.status !== "lobby") {
+      if (session.status === "finished" || session.status === "cancelled") {
+        return NextResponse.json(
+          { error: "This game has already ended." },
+          { status: 400 }
+        );
+      }
+
+      // Check if a player with the same name already exists (reconnect)
+      const { data: existingPlayer } = await supabase
+        .from("live_players")
+        .select("id")
+        .eq("session_id", session.id)
+        .eq("display_name", trimmedName)
+        .maybeSingle();
+
+      if (existingPlayer) {
+        // Reconnect: mark as connected and return existing player data
+        await supabase
+          .from("live_players")
+          .update({ is_connected: true, last_seen_at: new Date().toISOString() })
+          .eq("id", existingPlayer.id);
+
+        const playerToken = `${existingPlayer.id}:${session.id}`;
+        return NextResponse.json({
+          sessionId: session.id,
+          playerId: existingPlayer.id,
+          playerToken,
+        });
+      }
+
       return NextResponse.json(
-        { error: "This game has already started or ended." },
+        { error: "Game already started. Use the same name to rejoin." },
         { status: 400 }
       );
     }
