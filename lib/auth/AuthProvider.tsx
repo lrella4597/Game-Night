@@ -69,20 +69,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithMagicLink = async (email: string) => {
+    const base = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: base,
       },
     });
     return { error };
   };
 
   const signInWithGoogle = async () => {
+    const base = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${base}/auth/callback`,
       },
     });
     return { error };
