@@ -17,6 +17,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTH_DEBUG = process.env.NEXT_PUBLIC_AUTH_DEBUG === 'true';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -26,6 +28,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (AUTH_DEBUG) {
+        console.log('[Auth] getSession result:', session ? `user=${session.user.email}` : 'no session');
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -34,7 +39,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (AUTH_DEBUG) {
+        console.log('[Auth] onAuthStateChange:', event, session ? `user=${session.user.email}` : 'no session');
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -81,12 +89,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     const base = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    const redirectTo = `${base}/auth/callback`;
+    if (AUTH_DEBUG) {
+      console.log('[Auth] signInWithGoogle redirectTo:', redirectTo);
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${base}/auth/callback`,
+        redirectTo,
       },
     });
+    if (AUTH_DEBUG && error) {
+      console.log('[Auth] signInWithGoogle error:', error.message);
+    }
     return { error };
   };
 

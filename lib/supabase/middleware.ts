@@ -35,6 +35,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  if (process.env.NEXT_PUBLIC_AUTH_DEBUG === 'true') {
+    const pathname = request.nextUrl.pathname
+    if (pathname.startsWith('/auth/') || pathname === '/') {
+      console.log('[Auth Middleware]', pathname, 'user:', user?.email ?? 'none')
+    }
+  }
+
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new response object with NextResponse.next() make sure to:
   // 1. Pass the request in it, like so:

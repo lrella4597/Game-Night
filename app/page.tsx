@@ -1,11 +1,32 @@
 "use client";
 // Deployment test v4
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import Link from "next/link";
 import UserHeader from "@/app/components/auth/UserHeader";
+
+function AuthErrorBanner() {
+  const searchParams = useSearchParams();
+  const authError = searchParams.get("auth_error");
+  if (!authError) return null;
+
+  return (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-full px-4">
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg">
+        <p className="text-red-800 text-sm font-semibold">Sign-in failed</p>
+        <p className="text-red-600 text-xs mt-1">{decodeURIComponent(authError)}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function GameSelectPage() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 px-4">
+      <Suspense>
+        <AuthErrorBanner />
+      </Suspense>
+
       {/* Top-right header area */}
       <div className="fixed top-4 right-4 z-10 flex items-center gap-3">
         <Link
