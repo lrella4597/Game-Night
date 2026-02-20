@@ -4,8 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { pointValueToDifficulty } from "@/lib/prompts/clueGenerationPrompt";
 import type { GenerationState } from "@/lib/data/useGenerationState";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 interface ColumnRequest {
   categoryId: string;
   categoryName: string;
@@ -30,6 +28,8 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
+
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
     const body: RequestBody = await req.json();
     const { columns, generationState } = body;

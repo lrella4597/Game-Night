@@ -31,9 +31,9 @@ export function useGameSettings() {
         .from("game_settings")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== "PGRST116") throw error; // Ignore "not found" error
+      if (error) throw error;
 
       if (data) {
         setSettings({

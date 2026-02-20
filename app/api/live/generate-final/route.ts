@@ -2,10 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 export async function POST(req: NextRequest) {
   try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json(
+        { error: "AI service is not configured" },
+        { status: 503 }
+      );
+    }
+
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -30,10 +37,6 @@ export async function POST(req: NextRequest) {
 
     if (sessionError || !session) {
       return NextResponse.json({ error: "Not authorized for this session" }, { status: 403 });
-    }
-
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error("API key not configured");
     }
 
     console.log(`🎯 Generating Final Jeopardy clue for session ${sessionId}`);

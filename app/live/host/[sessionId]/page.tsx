@@ -874,38 +874,60 @@ export default function HostPage() {
         )}
 
         {/* Board select */}
-        {phase === "board_select" && board && (
-          <div className="flex flex-col items-center py-8 px-4">
-            <div className="flex items-center gap-4 mb-6 flex-wrap justify-center">
-              <h2 className="text-2xl font-bold text-[#FFD700]">
-                {currentRound === 2 ? "Double Jeopardy!" : "Select a Clue"}
-              </h2>
+        {phase === "board_select" && board && (() => {
+          const totalClues = board.columns.reduce((sum, col) => sum + col.questions.length, 0);
+          const revealedCount = gameState?.cluesRevealed?.length || 0;
+          const allCluesDone = revealedCount >= totalClues;
 
-              {session.config.enableDoubleJeopardy && currentRound === 1 && session.doubleJeopardyBoard && (
-                <button
-                  onClick={handleTransitionToRound2}
-                  className="px-4 py-2 rounded-lg font-bold text-sm bg-purple-600 hover:bg-purple-500 text-white transition-all"
-                >
-                  Go to Double Jeopardy
-                </button>
+          return (
+            <div className="flex flex-col items-center py-8 px-4">
+              {!allCluesDone && (
+                <div className="flex items-center gap-4 mb-6 flex-wrap justify-center">
+                  <h2 className="text-2xl font-bold text-[#FFD700]">
+                    {currentRound === 2 ? "Double Jeopardy!" : "Select a Clue"}
+                  </h2>
+
+                  {session.config.enableDoubleJeopardy && currentRound === 1 && session.doubleJeopardyBoard && (
+                    <button
+                      onClick={handleTransitionToRound2}
+                      className="px-4 py-2 rounded-lg font-bold text-sm bg-purple-600 hover:bg-purple-500 text-white transition-all"
+                    >
+                      Go to Double Jeopardy
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleStartFinalJeopardy}
+                    disabled={generatingFinal}
+                    className="px-4 py-2 rounded-lg font-bold text-sm bg-red-600 hover:bg-red-500 text-white disabled:opacity-50 transition-all"
+                  >
+                    {generatingFinal ? "Generating..." : "Final Jeopardy!"}
+                  </button>
+                </div>
               )}
 
-              <button
-                onClick={handleStartFinalJeopardy}
-                disabled={generatingFinal}
-                className="px-4 py-2 rounded-lg font-bold text-sm bg-red-600 hover:bg-red-500 text-white disabled:opacity-50 transition-all"
-              >
-                {generatingFinal ? "Generating..." : "Final Jeopardy!"}
-              </button>
+              {allCluesDone && (
+                <div className="flex flex-col items-center gap-4 mb-8">
+                  <p className="text-lg text-slate-300 font-medium">All clues answered!</p>
+                  <button
+                    onClick={handleStartFinalJeopardy}
+                    disabled={generatingFinal}
+                    className="animate-final-jeopardy px-8 py-4 rounded-xl font-extrabold text-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white disabled:opacity-50 transition-all shadow-lg"
+                  >
+                    {generatingFinal ? "Generating..." : "Final Jeopardy!"}
+                  </button>
+                </div>
+              )}
+
+              <JeopardyBoard
+                board={board}
+                cluesRevealed={gameState?.cluesRevealed || []}
+                onSelectClue={handleSelectClue}
+                interactive
+              />
             </div>
-            <JeopardyBoard
-              board={board}
-              cluesRevealed={gameState?.cluesRevealed || []}
-              onSelectClue={handleSelectClue}
-              interactive
-            />
-          </div>
-        )}
+          );
+        })()}
 
         {/* Daily Double */}
         {(phase === "daily_double_wager" || phase === "daily_double_answer") && currentQuestion && currentCategory && gameState?.currentAnswererId && (

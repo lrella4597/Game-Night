@@ -4,12 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { buildClueGenerationPrompt, pointValueToDifficulty } from "@/lib/prompts/clueGenerationPrompt";
 import type { GenerationState } from "@/lib/data/useGenerationState";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
 export async function POST(req: NextRequest) {
   try {
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
     // Check authentication
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();

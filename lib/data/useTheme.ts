@@ -178,14 +178,11 @@ export function useTheme() {
         .from("game_settings")
         .select("theme_colors")
         .eq("user_id", user!.id)
-        .single();
+        .maybeSingle();
 
-      // Silently handle common expected errors:
-      // - PGRST116: No rows (user hasn't saved settings yet)
-      // - 42703: Column doesn't exist (migration not applied)
-      // - 42P01: Table doesn't exist
+      // Silently handle expected errors (column/table doesn't exist)
       if (error) {
-        const ignorableCodes = ["PGRST116", "42703", "42P01"];
+        const ignorableCodes = ["42703", "42P01"];
         if (!ignorableCodes.includes(error.code || "")) {
           console.warn("Theme loading issue (using fallback):", error.message || error);
         }

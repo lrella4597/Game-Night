@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 interface RequestBody {
   question: string;
   answer: string;
@@ -49,6 +47,8 @@ export async function POST(req: NextRequest) {
       console.error("❌ ANTHROPIC_API_KEY is not set in environment variables");
       throw new Error("API key not configured - restart dev server after adding .env.local");
     }
+
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const body: RequestBody = await req.json();
     const { question, answer, category, value } = body;

@@ -6,14 +6,12 @@ import {
   getCustomizeTodayUserMessage,
 } from "@/lib/chat/customizeTodayPrompt";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
-
 const MAX_RETRIES = 2;
 
 export async function POST(req: NextRequest) {
   try {
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
     // Auth check
     const supabase = await createClient();
     const {

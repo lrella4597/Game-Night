@@ -99,6 +99,24 @@ body {
   pointer-events: none;
 }
 
+/* ── Final Jeopardy wiggle animation ─────────────────────────────────────── */
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-2deg); }
+  25% { transform: rotate(2deg); }
+  50% { transform: rotate(-2deg); }
+  75% { transform: rotate(1.5deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.8), 0 0 48px rgba(239, 68, 68, 0.3); }
+}
+
+.animate-final-jeopardy {
+  animation: wiggle 0.5s ease-in-out infinite, pulse-glow 2s ease-in-out infinite;
+}
+
 /* ── Chalkboard animations (Day of Deception) ────────────────────────────── */
 
 @keyframes chalkDraw {
