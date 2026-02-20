@@ -64,7 +64,7 @@ QUALITY GUIDELINES:
 Generate one exceptional Final Jeopardy clue now.`;
 
     const msg = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-sonnet-4-5-20250514",
       max_tokens: 500,
       temperature: 0.7,
       system: systemPrompt,

@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     let msg;
     try {
       msg = await anthropic.messages.create({
-        model: "claude-sonnet-4-5-20250929",
+        model: "claude-sonnet-4-5-20250514",
         max_tokens: 1000,
         temperature: 0.5,
         system: systemPrompt,
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
       topicTags,
       _debug: {
         provider: "claude",
-        model: "claude-sonnet-4-5-20250929",
+        model: "claude-sonnet-4-5-20250514",
         difficulty,
         qualityCheck: data.quality_check,
       }

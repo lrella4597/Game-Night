@@ -3,12 +3,21 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { BOARD_BUILDER_SYSTEM_PROMPT, getUserMessage } from "@/lib/chat/boardBuilderPrompt";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
-
 export async function POST(req: NextRequest) {
   try {
+    // Verify API key is configured
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error("ANTHROPIC_API_KEY is not configured");
+      return NextResponse.json(
+        { error: "AI service is not configured. Please contact the administrator." },
+        { status: 503 }
+      );
+    }
+
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+
     // Auth check
     const supabase = await createClient();
     const {
@@ -29,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     // Call Claude API with structured output
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-sonnet-4-5-20250514",
       max_tokens: 4000,
       temperature: 0.7,
       system: BOARD_BUILDER_SYSTEM_PROMPT,
@@ -86,11 +95,11 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Error in chat board builder:", error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "Unknown error";
+    // Distinguish between API errors and other errors
+    const status = message.includes("401") || message.includes("authentication")
+      ? 503  // API key invalid
+      : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
