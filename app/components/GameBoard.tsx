@@ -44,7 +44,7 @@ interface GenBoardResponse {
 
 export default function GameBoard() {
   // ── Board + library state ────────────────────────────────────────────────────
-  const { currentBoard, saveCurrentBoard, loading: boardsLoading } = useBoards();
+  const { currentBoard, saveCurrentBoard, loading: boardsLoading, initializing: boardInitializing } = useBoards();
   const { categories: categoryLibrary, loading: categoriesLoading } = useCategoryLibrary();
   const { teams, loading: teamsLoading, updateTeamScore, setTeamScore, togglePowerUp } = useTeams();
   const { settings: gameSettings, loading: settingsLoading } = useGameSettings();
@@ -615,10 +615,20 @@ export default function GameBoard() {
     return <LoadingSpinner message="Loading game data..." />;
   }
 
+  if (boardInitializing) {
+    return <LoadingSpinner message="Setting up your starter board..." />;
+  }
+
   if (!boardState) {
     return (
       <div className="w-full flex flex-col items-center justify-center min-h-screen">
-        <div className="text-slate-600 text-sm">No board found. Create one in Edit Mode.</div>
+        <div className="text-slate-600 text-sm">No board found. Click Edit Board to create one.</div>
+        <button
+          onClick={() => setEditMode(true)}
+          className="mt-4 px-4 py-2 rounded-lg font-bold text-sm bg-blue-600 hover:bg-blue-500 text-white transition-all"
+        >
+          Edit Board
+        </button>
       </div>
     );
   }
