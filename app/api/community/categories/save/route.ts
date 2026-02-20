@@ -50,6 +50,7 @@ export async function POST(req: Request) {
       difficulty_guidance: communityCategory.difficulty_guidance || "",
       answer_format_guidance: communityCategory.answer_format_guidance || "",
       examples: communityCategory.examples || "",
+      origin: "community",
     });
 
     if (insertError) {

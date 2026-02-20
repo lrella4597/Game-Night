@@ -13,6 +13,7 @@ export interface SavedBoard {
   board_data: GameBoard;
   created_at: string;
   user_id: string;
+  origin?: string | null;
 }
 
 export function useBoards() {

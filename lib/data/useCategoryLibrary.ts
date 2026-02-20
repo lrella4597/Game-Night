@@ -11,6 +11,7 @@ export interface CategoryPrompt {
   difficultyGuidance: string;
   answerFormatGuidance: string;
   examples: string;
+  origin?: string | null;
 }
 
 export function useCategoryLibrary() {
@@ -42,6 +43,7 @@ export function useCategoryLibrary() {
         difficultyGuidance: cat.difficulty_guidance,
         answerFormatGuidance: cat.answer_format_guidance,
         examples: cat.examples,
+        origin: cat.origin ?? null,
       }));
 
       setCategories(transformed);

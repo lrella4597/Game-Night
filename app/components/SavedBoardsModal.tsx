@@ -189,6 +189,11 @@ export default function SavedBoardsModal({
                           <p className="font-bold tracking-tight text-sm truncate text-slate-900">
                             {b.name}
                           </p>
+                          {b.origin === "community" && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+                              Community
+                            </span>
+                          )}
                           {isPublished && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700">
                               Published

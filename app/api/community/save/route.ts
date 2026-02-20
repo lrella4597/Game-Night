@@ -48,6 +48,7 @@ export async function POST(req: Request) {
       name: communityBoard.title,
       board_data: communityBoard.board_data,
       is_current: false,
+      origin: "community",
     });
 
     if (insertError) {

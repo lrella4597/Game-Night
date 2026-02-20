@@ -551,6 +551,11 @@ export default function CategoriesTab() {
                       <p className="font-bold tracking-tight text-base text-slate-900">
                         {item.name}
                       </p>
+                      {item.origin === "community" && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold border border-purple-200">
+                          Community
+                        </span>
+                      )}
                       {isDuplicate && (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold border border-orange-300">
                           Duplicate ({duplicateCount}x)
