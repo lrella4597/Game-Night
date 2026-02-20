@@ -10,7 +10,7 @@ export { DEFAULT_SETTINGS, type GameSettings, type GameMode, type PointMode } fr
 export function useGameSettings() {
   const { user } = useAuth();
   const [settings, setSettings] = useState<GameSettings>({
-    mode: "manual",
+    mode: "ai",
     questionTimerSeconds: 45,
     stealTimerSeconds: 10,
     pointMode: "classic",
@@ -61,14 +61,17 @@ export function useGameSettings() {
       if (!user) return;
 
       try {
-        await supabase.from("game_settings").upsert({
-          user_id: user.id,
-          mode: newSettings.mode,
-          question_timer_seconds: newSettings.questionTimerSeconds,
-          steal_timer_seconds: newSettings.stealTimerSeconds,
-          point_mode: newSettings.pointMode,
-          flat_point_value: newSettings.flatPointValue,
-        });
+        await supabase.from("game_settings").upsert(
+          {
+            user_id: user.id,
+            mode: newSettings.mode,
+            question_timer_seconds: newSettings.questionTimerSeconds,
+            steal_timer_seconds: newSettings.stealTimerSeconds,
+            point_mode: newSettings.pointMode,
+            flat_point_value: newSettings.flatPointValue,
+          },
+          { onConflict: "user_id" }
+        );
 
         setSettings(newSettings);
       } catch (error) {

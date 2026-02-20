@@ -14,6 +14,8 @@ export default function SetupTab() {
   const { currentBoard, saveCurrentBoard, loading: boardsLoading } = useBoards();
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const [newPlayerName, setNewPlayerName] = useState<Record<string, string>>({});
+  const [pendingMode, setPendingMode] = useState<"manual" | "ai" | null>(null);
+  const [modeSaved, setModeSaved] = useState(false);
 
   // ── Persist helpers ──────────────────────────────────────────────────────────
 
@@ -307,31 +309,59 @@ export default function SetupTab() {
                     desc: "Generate questions with Claude. Generate All / Column / Refresh buttons are shown.",
                   },
                 ] as const
-              ).map(({ value, title, desc }) => (
-                <button
-                  key={value}
-                  onClick={() => persistSettings({ ...settings, mode: value })}
-                  className={`flex-1 min-w-[180px] rounded-xl border-2 p-3 text-left transition-all ${
-                    settings.mode === value
-                      ? "bg-accent/10 border-accent"
-                      : "bg-white border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`w-3 h-3 rounded-full border-2 shrink-0 ${
-                        settings.mode === value
-                          ? "border-accent bg-accent"
-                          : "border-slate-300 bg-white"
-                      }`}
-                    />
-                    <span className="font-semibold text-sm tracking-tight text-slate-900">
-                      {title}
-                    </span>
-                  </div>
-                  <p className="text-slate-600 text-xs leading-snug pl-5">{desc}</p>
-                </button>
-              ))}
+              ).map(({ value, title, desc }) => {
+                const activeMode = pendingMode ?? settings.mode;
+                return (
+                  <button
+                    key={value}
+                    onClick={() => {
+                      setPendingMode(value);
+                      setModeSaved(false);
+                    }}
+                    className={`flex-1 min-w-[180px] rounded-xl border-2 p-3 text-left transition-all ${
+                      activeMode === value
+                        ? "bg-accent/10 border-accent"
+                        : "bg-white border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span
+                        className={`w-3 h-3 rounded-full border-2 shrink-0 ${
+                          activeMode === value
+                            ? "border-accent bg-accent"
+                            : "border-slate-300 bg-white"
+                        }`}
+                      />
+                      <span className="font-semibold text-sm tracking-tight text-slate-900">
+                        {title}
+                      </span>
+                    </div>
+                    <p className="text-slate-600 text-xs leading-snug pl-5">{desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-3 mt-1">
+              <button
+                onClick={async () => {
+                  const modeToSave = pendingMode ?? settings.mode;
+                  await persistSettings({ ...settings, mode: modeToSave });
+                  setPendingMode(null);
+                  setModeSaved(true);
+                  setTimeout(() => setModeSaved(false), 2000);
+                }}
+                disabled={pendingMode === null || pendingMode === settings.mode}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all border ${
+                  pendingMode !== null && pendingMode !== settings.mode
+                    ? "bg-accent text-slate-900 border-accent hover:bg-accent/80"
+                    : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                }`}
+              >
+                Save Mode
+              </button>
+              {modeSaved && (
+                <span className="text-sm font-medium text-green-600">Saved!</span>
+              )}
             </div>
           </div>
 

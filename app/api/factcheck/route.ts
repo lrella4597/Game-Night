@@ -73,7 +73,7 @@ Fact-check this answer and return the JSON object described.`;
     let msg;
     try {
       msg = await anthropic.messages.create({
-        model: "claude-sonnet-4-5-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 600,
         temperature: 0.2,
         system: SYSTEM_PROMPT,
@@ -117,7 +117,7 @@ Fact-check this answer and return the JSON object described.`;
       ...data,
       _debug: {
         provider: "claude",
-        model: "claude-sonnet-4-5-20250514",
+        model: "claude-sonnet-4-6",
       }
     });
   } catch (err: unknown) {

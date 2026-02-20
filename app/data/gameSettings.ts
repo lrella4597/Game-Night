@@ -12,7 +12,7 @@ export interface GameSettings {
 const STORAGE_KEY = "triviaMasters.gameSettings.v1";
 
 export const DEFAULT_SETTINGS: GameSettings = {
-  mode: "manual",
+  mode: "ai",
   questionTimerSeconds: 45,
   stealTimerSeconds: 10,
   pointMode: "classic",

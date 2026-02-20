@@ -161,7 +161,7 @@ Generate ${rowValues.length} completely different, high-quality Jeopardy clues n
         while (retryCount < maxRetries) {
           try {
             msg = await anthropic.messages.create({
-              model: "claude-sonnet-4-5-20250514",
+              model: "claude-sonnet-4-6",
               max_tokens: 3000,
               temperature: 0.5 + retryCount * 0.1,
               system: systemPrompt,
@@ -267,7 +267,7 @@ Generate ${rowValues.length} completely different, high-quality Jeopardy clues n
       columns: result,
       _debug: {
         provider: "claude",
-        model: "claude-sonnet-4-5-20250514",
+        model: "claude-sonnet-4-6",
         columnsGenerated: result.length,
         columnsFailed: failures.length,
       }

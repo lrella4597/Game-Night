@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     // Call Claude API with structured output
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 4000,
       temperature: 0.7,
       system: BOARD_BUILDER_SYSTEM_PROMPT,
