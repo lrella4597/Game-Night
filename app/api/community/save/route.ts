@@ -27,6 +27,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Community board not found" }, { status: 404 });
     }
 
+    // Dedup: check if user already has a board with the same title
+    const { data: existing } = await supabase
+      .from("boards")
+      .select("id")
+      .eq("user_id", user.id)
+      .ilike("name", communityBoard.title)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "You already have a board with this name" },
+        { status: 409 }
+      );
+    }
+
     // Copy to user's boards library
     const { error: insertError } = await supabase.from("boards").insert({
       user_id: user.id,

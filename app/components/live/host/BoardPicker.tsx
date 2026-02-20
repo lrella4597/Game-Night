@@ -255,11 +255,13 @@ export default function BoardPicker({ onBoardReady, rowValues }: BoardPickerProp
 function CommunityBoardBrowser({ onSelectBoard }: { onSelectBoard: (board: BoardState) => void }) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [modeFilter, setModeFilter] = useState<"" | "trivia_free4all" | "classic_jeopardy">("classic_jeopardy");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { boards, loading, error } = useCommunityBoards({
     sort: "top",
     search: debouncedSearch,
+    mode: modeFilter,
   });
 
   useEffect(() => {
@@ -272,6 +274,27 @@ function CommunityBoardBrowser({ onSelectBoard }: { onSelectBoard: (board: Board
 
   return (
     <div>
+      {/* Mode filter chips */}
+      <div className="flex gap-2 mb-3">
+        {([
+          { value: "" as const, label: "All" },
+          { value: "classic_jeopardy" as const, label: "Jeopardy" },
+          { value: "trivia_free4all" as const, label: "Trivia" },
+        ]).map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => setModeFilter(value)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+              modeFilter === value
+                ? "bg-[#FFD700]/20 text-[#FFD700] border-[#FFD700]/50"
+                : "bg-white/5 text-blue-300 border-white/10 hover:bg-white/10"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <input
         type="text"
         value={search}
@@ -290,9 +313,7 @@ function CommunityBoardBrowser({ onSelectBoard }: { onSelectBoard: (board: Board
         </p>
       ) : (
         <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto pr-1">
-          {boards.map((b) => {
-            const score = b.upvotes - b.downvotes;
-            return (
+          {boards.map((b) => (
               <button
                 key={b.id}
                 onClick={() => onSelectBoard(b.boardData)}
@@ -300,13 +321,24 @@ function CommunityBoardBrowser({ onSelectBoard }: { onSelectBoard: (board: Board
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{b.title}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm truncate">{b.title}</p>
+                      {b.mode && (
+                        <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide ${
+                          b.mode === "trivia_free4all"
+                            ? "bg-lime-500/20 text-lime-300"
+                            : "bg-blue-500/20 text-blue-300"
+                        }`}>
+                          {b.mode === "trivia_free4all" ? "Trivia" : "Jeopardy"}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-blue-300 text-xs mt-0.5">
                       by {b.authorName} · {b.boardData.columns.length} categories
                     </p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0 text-xs text-blue-300">
-                    <span>{score >= 0 ? "+" : ""}{score} votes</span>
+                    <span>+{b.upvotes} votes</span>
                     <span>{b.saveCount} saves</span>
                   </div>
                 </div>
@@ -323,8 +355,7 @@ function CommunityBoardBrowser({ onSelectBoard }: { onSelectBoard: (board: Board
                   </div>
                 )}
               </button>
-            );
-          })}
+          ))}
         </div>
       )}
     </div>

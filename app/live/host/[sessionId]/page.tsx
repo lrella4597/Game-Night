@@ -24,6 +24,7 @@ import JeopardyBoard from "@/app/components/live/shared/JeopardyBoard";
 import { isDailyDouble, generateDailyDoubles } from "@/lib/live/dailyDoubleUtils";
 import { useSoundEffects } from "@/lib/audio/useSoundEffects";
 import { useThinkMusic } from "@/lib/audio/useThinkMusic";
+import HowToPlayModal from "@/app/components/HowToPlayModal";
 import type {
   LiveSession,
   LivePlayer,
@@ -674,18 +675,59 @@ export default function HostPage() {
 
   if (!session) return null;
 
+  const jeopardyHostHelp = (
+    <HowToPlayModal
+      gameKey="howto_jeopardy_host"
+      title="How to Host Jeopardy"
+      accentColor="blue"
+      sections={[
+        {
+          title: "Setup",
+          steps: [
+            "Share the join code with players so they can join on their phones",
+            "Wait for all players to connect in the lobby",
+            "Optionally customize game settings (timers, Double Jeopardy, etc.)",
+            "Click \"Prep Board\" to generate or customize your board, then \"Start Game\"",
+          ],
+        },
+        {
+          title: "Gameplay",
+          steps: [
+            "Click any tile on the board to reveal a clue",
+            "Read the clue aloud — players will see \"Get ready to buzz!\"",
+            "Click \"Open Buzzer\" to let players buzz in",
+            "The first player to buzz appears — judge their answer as Correct or Incorrect",
+            "Correct answers earn points, incorrect answers lose points",
+          ],
+        },
+        {
+          title: "Special Rounds",
+          steps: [
+            "Daily Doubles: A random player wagers before answering alone",
+            "Double Jeopardy: All values double in round 2 (if enabled)",
+            "Final Jeopardy: Players wager, then draw/write their answer on a timer",
+            "You reveal answers one by one (lowest score first) and judge each",
+          ],
+        },
+      ]}
+    />
+  );
+
   // ── Lobby phase ────────────────────────────────────────────────────────────
 
   if (phase === "lobby") {
     return (
-      <HostLobby
-        session={session}
-        players={players}
-        connected={connected}
-        onStartGame={handleStartGame}
-        onPrepBoard={handlePrepBoard}
-        onUpdateConfig={handleUpdateConfig}
-      />
+      <>
+        <div className="fixed top-4 right-4 z-40">{jeopardyHostHelp}</div>
+        <HostLobby
+          session={session}
+          players={players}
+          connected={connected}
+          onStartGame={handleStartGame}
+          onPrepBoard={handlePrepBoard}
+          onUpdateConfig={handleUpdateConfig}
+        />
+      </>
     );
   }
 
@@ -717,6 +759,7 @@ export default function HostPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <div className="fixed top-4 right-4 z-40">{jeopardyHostHelp}</div>
       <LiveSoundControls />
       <div className="flex-1">
         {/* Round intro */}

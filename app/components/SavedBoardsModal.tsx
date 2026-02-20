@@ -27,6 +27,7 @@ export default function SavedBoardsModal({
   const [publishingBoardId, setPublishingBoardId] = useState<string | null>(null);
   const [publishTitle, setPublishTitle] = useState("");
   const [publishDescription, setPublishDescription] = useState("");
+  const [publishMode, setPublishMode] = useState<"trivia_free4all" | "classic_jeopardy">("classic_jeopardy");
   const [publishing, setPublishing] = useState(false);
   const [publishedBoardIds, setPublishedBoardIds] = useState<Set<string>>(new Set());
 
@@ -73,6 +74,7 @@ export default function SavedBoardsModal({
           boardId: publishingBoardId,
           title: publishTitle.trim(),
           description: publishDescription.trim(),
+          mode: publishMode,
         }),
       });
       if (!res.ok) {
@@ -248,6 +250,29 @@ export default function SavedBoardsModal({
                         rows={2}
                         className="w-full rounded-lg px-3 py-2 text-sm text-slate-900 bg-white border border-slate-200 focus:outline-none focus:border-green-400 resize-none"
                       />
+                      {/* Mode selector */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setPublishMode("classic_jeopardy")}
+                          className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                            publishMode === "classic_jeopardy"
+                              ? "bg-blue-100 text-blue-700 border-blue-300"
+                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          Classic Jeopardy
+                        </button>
+                        <button
+                          onClick={() => setPublishMode("trivia_free4all")}
+                          className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                            publishMode === "trivia_free4all"
+                              ? "bg-lime-100 text-lime-700 border-lime-300"
+                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          Trivia Free4All
+                        </button>
+                      </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={handlePublish}

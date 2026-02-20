@@ -27,7 +27,8 @@ export async function POST(req: Request) {
     const { error: updateErr } = await supabase
       .from("live_players")
       .update({ final_wager: wager })
-      .eq("id", playerId);
+      .eq("id", playerId)
+      .eq("session_id", sessionId);
 
     if (updateErr) {
       console.error("Failed to save wager:", updateErr);

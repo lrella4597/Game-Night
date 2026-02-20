@@ -30,7 +30,8 @@ export async function POST(req: Request) {
         final_answer_drawing: drawingDataUrl || null,
         final_answer_text: textAnswer || null,
       })
-      .eq("id", playerId);
+      .eq("id", playerId)
+      .eq("session_id", sessionId);
 
     if (updateErr) {
       console.error("Failed to save answer:", updateErr);

@@ -15,6 +15,7 @@ import DayPlayerVoting from "@/app/components/day-of-deception/player/DayPlayerV
 import DayPlayerReveal from "@/app/components/day-of-deception/player/DayPlayerReveal";
 import DayPlayerEnd from "@/app/components/day-of-deception/player/DayPlayerEnd";
 import type { DayPhase, PlayerRole, DayMission } from "@/lib/day-of-deception/types";
+import HowToPlayModal from "@/app/components/HowToPlayModal";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyPayload = any;
@@ -300,68 +301,128 @@ export default function TraitorsDayPlayerPage() {
     );
   }
 
+  const dodPlayerHelp = (
+    <HowToPlayModal
+      gameKey="howto_dod_player"
+      title="How to Play Day of Deception"
+      accentColor="red"
+      sections={[
+        {
+          title: "Your Role",
+          steps: [
+            "You are secretly assigned as either Faithful or Deceiver",
+            "Faithful: Work together to identify the Deceivers among you",
+            "Deceiver: Blend in and avoid being caught while completing secret missions",
+          ],
+        },
+        {
+          title: "During the Day",
+          steps: [
+            "Complete missions sent by the host to earn Shadow Tokens",
+            "Participate in group events — Deceivers may have secret objectives",
+            "Pay attention to how others behave — look for suspicious actions",
+          ],
+        },
+        {
+          title: "Roundtable & Voting",
+          steps: [
+            "During the Roundtable, discuss openly who you suspect and why",
+            "When voting starts, pick the player you think is a Deceiver",
+            "The player with the most votes is revealed — were they Faithful or Deceiver?",
+            "Faithfuls win by finding all Deceivers. Deceivers win by surviving.",
+          ],
+        },
+      ]}
+    />
+  );
+
   // Phase rendering
   if (phase === "lobby") {
-    return <DayPlayerLobby players={players} playerName={playerName} />;
+    return (
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        <DayPlayerLobby players={players} playerName={playerName} />
+      </>
+    );
   }
 
   if (phase === "roles_revealed") {
     return (
-      <DayPlayerRoleReveal
-        role={myRole}
-        fellowDeceivers={fellowDeceivers}
-        loading={myRole === null}
-      />
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        <DayPlayerRoleReveal
+          role={myRole}
+          fellowDeceivers={fellowDeceivers}
+          loading={myRole === null}
+        />
+      </>
     );
   }
 
   if (phase === "freeplay") {
     return (
-      <DayPlayerFreeplay
-        role={myRole}
-        missions={missions}
-        onCompleteMission={handleCompleteMission}
-      />
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        <DayPlayerFreeplay
+          role={myRole}
+          missions={missions}
+          onCompleteMission={handleCompleteMission}
+        />
+      </>
     );
   }
 
   if (phase === "event_active") {
     return (
-      <DayPlayerEventActive
-        eventData={eventData}
-        role={myRole}
-        timerRemaining={timerRemaining}
-        timerRunning={timerRunning}
-      />
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        <DayPlayerEventActive
+          eventData={eventData}
+          role={myRole}
+          timerRemaining={timerRemaining}
+          timerRunning={timerRunning}
+        />
+      </>
     );
   }
 
   if (phase === "roundtable") {
     return (
+      <>
+      <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
       <DayPlayerRoundtable
         timerRemaining={timerRemaining}
         timerRunning={timerRunning}
       />
+      </>
     );
   }
 
   if (phase === "voting") {
     return (
-      <DayPlayerVoting
-        players={players}
-        myPlayerId={playerId}
-        selectedTarget={voteTarget}
-        onSelectTarget={setVoteTarget}
-        onSubmit={handleVoteSubmit}
-        submitted={voteSubmitted}
-        timerRemaining={timerRemaining}
-        timerRunning={timerRunning}
-      />
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        <DayPlayerVoting
+          players={players}
+          myPlayerId={playerId}
+          selectedTarget={voteTarget}
+          onSelectTarget={setVoteTarget}
+          onSubmit={handleVoteSubmit}
+          submitted={voteSubmitted}
+          timerRemaining={timerRemaining}
+          timerRunning={timerRunning}
+        />
+      </>
     );
   }
 
   if (phase === "reveal") {
-    return <DayPlayerReveal voteResult={voteResult} myRole={myRole} />;
+    return (
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        <DayPlayerReveal voteResult={voteResult} myRole={myRole} />
+      </>
+    );
   }
 
   if (phase === "end" && endgameData) {

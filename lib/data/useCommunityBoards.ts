@@ -11,6 +11,7 @@ export interface CommunityBoard {
   description: string;
   boardData: BoardState;
   categoryNames: string[];
+  mode: "trivia_free4all" | "classic_jeopardy" | null;
   upvotes: number;
   downvotes: number;
   saveCount: number;
@@ -21,6 +22,7 @@ export interface CommunityBoard {
 interface UseCommunityBoardsOptions {
   sort?: "hot" | "new" | "top";
   search?: string;
+  mode?: "trivia_free4all" | "classic_jeopardy" | "";
   page?: number;
   limit?: number;
 }
@@ -28,6 +30,7 @@ interface UseCommunityBoardsOptions {
 export function useCommunityBoards({
   sort = "hot",
   search = "",
+  mode = "",
   page = 1,
   limit = 20,
 }: UseCommunityBoardsOptions = {}) {
@@ -48,6 +51,7 @@ export function useCommunityBoards({
         limit: String(limit),
       });
       if (search.trim()) params.set("search", search.trim());
+      if (mode) params.set("mode", mode);
 
       const res = await fetch(`/api/community/boards?${params}`);
       if (!res.ok) {
@@ -64,43 +68,30 @@ export function useCommunityBoards({
     } finally {
       setLoading(false);
     }
-  }, [sort, search, page, limit]);
+  }, [sort, search, mode, page, limit]);
 
   useEffect(() => {
     fetchBoards();
   }, [fetchBoards]);
 
-  const vote = useCallback(async (boardId: string, voteValue: number) => {
-    // Optimistic update
+  const vote = useCallback(async (boardId: string) => {
+    // Upvote-only toggle: if already voted, remove; otherwise add
     setBoards((prev) =>
       prev.map((b) => {
         if (b.id !== boardId) return b;
-        const oldVote = b.myVote;
-        const newVote = oldVote === voteValue ? 0 : voteValue;
-
-        let upDelta = 0;
-        let downDelta = 0;
-
-        // Remove old vote effect
-        if (oldVote === 1) upDelta--;
-        if (oldVote === -1) downDelta--;
-
-        // Apply new vote effect
-        if (newVote === 1) upDelta++;
-        if (newVote === -1) downDelta++;
+        const wasVoted = b.myVote === 1;
 
         return {
           ...b,
-          myVote: newVote === 0 ? null : newVote,
-          upvotes: b.upvotes + upDelta,
-          downvotes: b.downvotes + downDelta,
+          myVote: wasVoted ? null : 1,
+          upvotes: b.upvotes + (wasVoted ? -1 : 1),
         };
       })
     );
 
     try {
       const currentBoard = boards.find((b) => b.id === boardId);
-      const actualVote = currentBoard?.myVote === voteValue ? 0 : voteValue;
+      const actualVote = currentBoard?.myVote === 1 ? 0 : 1;
 
       const res = await fetch("/api/community/vote", {
         method: "POST",
@@ -117,7 +108,7 @@ export function useCommunityBoards({
     }
   }, [boards, fetchBoards]);
 
-  const saveBoard = useCallback(async (communityBoardId: string): Promise<boolean> => {
+  const saveBoard = useCallback(async (communityBoardId: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await fetch("/api/community/save", {
         method: "POST",
@@ -125,9 +116,10 @@ export function useCommunityBoards({
         body: JSON.stringify({ communityBoardId }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to save board");
+        return { success: false, error: data.error || "Failed to save board" };
       }
 
       // Update save count optimistically
@@ -137,9 +129,9 @@ export function useCommunityBoards({
         )
       );
 
-      return true;
+      return { success: true };
     } catch {
-      return false;
+      return { success: false, error: "Failed to save board" };
     }
   }, []);
 

@@ -23,6 +23,11 @@ export default function CategoriesTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showDuplicates, setShowDuplicates] = useState(false);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [publishDescription, setPublishDescription] = useState("");
+  const [publishingInProgress, setPublishingInProgress] = useState(false);
+  const [publishedIds, setPublishedIds] = useState<Set<string>>(new Set());
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   function set(field: keyof typeof EMPTY_FORM, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -68,6 +73,42 @@ export default function CategoriesTab() {
     });
 
     setSelectedIds(new Set(idsToSelect));
+  }
+
+  // ── Publish ─────────────────────────────────────────────────────────────────
+
+  function startPublish(id: string) {
+    setPublishingId(id);
+    setPublishDescription("");
+    setPublishError(null);
+    setFormMode(null);
+    setDeleteConfirmId(null);
+  }
+
+  async function handlePublish(categoryId: string) {
+    setPublishingInProgress(true);
+    setPublishError(null);
+    try {
+      const res = await fetch("/api/community/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categoryId,
+          description: publishDescription.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPublishError(data.error || "Failed to publish");
+      } else {
+        setPublishedIds((prev) => new Set(prev).add(categoryId));
+        setPublishingId(null);
+      }
+    } catch {
+      setPublishError("Failed to publish category");
+    } finally {
+      setPublishingInProgress(false);
+    }
   }
 
   // ── Form handling ────────────────────────────────────────────────────────────
@@ -474,6 +515,8 @@ export default function CategoriesTab() {
             const isEditing =
               formMode?.type === "edit" && formMode.id === item.id;
             const isDeleting = deleteConfirmId === item.id;
+            const isPublishing = publishingId === item.id;
+            const isPublished = publishedIds.has(item.id);
             const isSelected = selectedIds.has(item.id);
             const isDuplicate = duplicateIdsSet.has(item.id);
             const duplicateCount = duplicateGroups[item.name.trim().toUpperCase()]?.length || 0;
@@ -484,6 +527,8 @@ export default function CategoriesTab() {
                 className={`rounded-xl border-2 flex flex-col gap-2 p-4 transition-all ${
                   isDeleting
                     ? "bg-red-50 border-red-300"
+                    : isPublishing
+                    ? "bg-green-50 border-green-300"
                     : isEditing
                     ? "bg-white border-accent"
                     : isSelected
@@ -543,15 +588,20 @@ export default function CategoriesTab() {
                   </div>
 
                   {/* Action buttons */}
-                  {!isDeleting && (
+                  {!isDeleting && !isPublishing && (
                     <div className="flex gap-2 shrink-0">
-                      <button
-                        disabled
-                        title="AI question generation — available in the Game tab (Edit Mode)"
-                        className="px-3 py-1 rounded-lg text-xs font-semibold border border-slate-200 text-slate-400 opacity-50 cursor-not-allowed"
-                      >
-                        Generate
-                      </button>
+                      {isPublished ? (
+                        <span className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200">
+                          Published
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => startPublish(item.id)}
+                          className="px-3 py-1 rounded-lg text-xs font-semibold border border-green-200 text-green-600 hover:bg-green-50 transition-all"
+                        >
+                          Publish
+                        </button>
+                      )}
                       <button
                         onClick={() => openEditForm(item)}
                         className="px-3 py-1 rounded-lg text-xs font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all"
@@ -567,6 +617,47 @@ export default function CategoriesTab() {
                     </div>
                   )}
                 </div>
+
+                {/* Inline publish form */}
+                {isPublishing && (
+                  <div className="flex flex-col gap-2 pt-2 border-t border-green-200">
+                    <p className="text-xs font-semibold text-green-800">
+                      Publish "{item.name}" to Community
+                    </p>
+                    <textarea
+                      value={publishDescription}
+                      onChange={(e) => setPublishDescription(e.target.value)}
+                      placeholder="Add a short description (optional)"
+                      maxLength={200}
+                      rows={2}
+                      className="w-full rounded-lg px-3 py-2 text-sm text-slate-900 bg-white border border-slate-200 focus:outline-none focus:border-green-400 resize-none"
+                    />
+                    {publishError && (
+                      <p className="text-xs text-red-600">{publishError}</p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handlePublish(item.id)}
+                        disabled={publishingInProgress}
+                        className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 transition-all"
+                      >
+                        {publishingInProgress ? "Publishing..." : "Publish to Community"}
+                      </button>
+                      <button
+                        onClick={() => setPublishingId(null)}
+                        className="px-4 py-1.5 rounded-lg text-xs font-semibold btn-secondary hover:bg-slate-50"
+                      >
+                        Cancel
+                      </button>
+                      <a
+                        href="/community?tab=categories"
+                        className="ml-auto text-xs text-[#060CE9] hover:underline"
+                      >
+                        Browse Community
+                      </a>
+                    </div>
+                  </div>
+                )}
 
                 {/* Inline delete confirm */}
                 {isDeleting && (

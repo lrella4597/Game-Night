@@ -87,6 +87,7 @@ export default function SetupTab() {
 
     const updatedBoard = {
       ...currentBoard,
+      rowValues: currentBoard.rowValues.map(() => value),
       columns: currentBoard.columns.map((col) => ({
         ...col,
         questions: col.questions.map((q) => ({

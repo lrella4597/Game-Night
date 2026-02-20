@@ -78,7 +78,7 @@ export default function GameBoard() {
   const [draggedQuestion, setDraggedQuestion] = useState<{
     questionId: string;
     columnId: string;
-    value: number;
+    rowIndex: number;
   } | null>(null);
 
   // ── Saved boards modal ───────────────────────────────────────────────────────
@@ -199,15 +199,15 @@ export default function GameBoard() {
 
   // ── Drag and drop handlers ───────────────────────────────────────────────────
 
-  function handleDragStart(questionId: string, columnId: string, value: number) {
-    setDraggedQuestion({ questionId, columnId, value });
+  function handleDragStart(questionId: string, columnId: string, rowIndex: number) {
+    setDraggedQuestion({ questionId, columnId, rowIndex });
   }
 
   function handleDragOver(e: React.DragEvent) {
     e.preventDefault(); // Allow drop
   }
 
-  function handleDrop(targetColumnId: string, targetValue: number) {
+  function handleDrop(targetColumnId: string, targetRowIndex: number) {
     if (!draggedQuestion || !boardState) return;
 
     // Can only reorder within the same column
@@ -217,34 +217,31 @@ export default function GameBoard() {
     }
 
     // If dropping on itself, do nothing
-    if (draggedQuestion.value === targetValue) {
+    if (draggedQuestion.rowIndex === targetRowIndex) {
       setDraggedQuestion(null);
       return;
     }
 
-    // Swap the questions at the two positions
+    // Swap the questions at the two row positions and their values
     setBoardState({
       ...boardState,
       columns: boardState.columns.map((col) => {
         if (col.id !== targetColumnId) return col;
 
-        const draggedQ = col.questions.find((q) => q.id === draggedQuestion.questionId);
-        const targetQ = col.questions.find((q) => q.value === targetValue);
+        const srcIdx = draggedQuestion.rowIndex;
+        const dstIdx = targetRowIndex;
+        const questions = [...col.questions];
 
-        if (!draggedQ || !targetQ) return col;
+        if (srcIdx >= questions.length || dstIdx >= questions.length) return col;
 
-        return {
-          ...col,
-          questions: col.questions.map((q) => {
-            if (q.id === draggedQ.id) {
-              return { ...q, value: targetValue };
-            }
-            if (q.id === targetQ.id) {
-              return { ...q, value: draggedQuestion.value };
-            }
-            return q;
-          }),
-        };
+        // Swap the questions and their values
+        const srcVal = questions[srcIdx].value;
+        const dstVal = questions[dstIdx].value;
+        questions[srcIdx] = { ...questions[srcIdx], value: dstVal };
+        questions[dstIdx] = { ...questions[dstIdx], value: srcVal };
+        [questions[srcIdx], questions[dstIdx]] = [questions[dstIdx], questions[srcIdx]];
+
+        return { ...col, questions };
       }),
     });
 
@@ -801,26 +798,26 @@ export default function GameBoard() {
         })}
 
         {/* Question tiles — row by row */}
-        {boardState.rowValues.map((value) =>
+        {boardState.rowValues.map((_, rowIndex) =>
           boardState.columns.map((col) => {
-            const question = col.questions.find((q) => q.value === value);
-            if (!question) return <div key={`${col.id}-${value}-empty`} />;
+            const question = col.questions[rowIndex];
+            if (!question) return <div key={`${col.id}-row${rowIndex}-empty`} />;
 
             const isUsed = !editMode && usedQuestions.has(question.id);
             const colGenerating = generatingColumns.has(col.id);
 
             if (editMode) {
               const isDragging = draggedQuestion?.questionId === question.id;
-              const isDropTarget = draggedQuestion && draggedQuestion.columnId === col.id && draggedQuestion.value !== value;
+              const isDropTarget = draggedQuestion && draggedQuestion.columnId === col.id && draggedQuestion.rowIndex !== rowIndex;
 
               return (
                 <button
                   key={question.id}
                   onClick={() => setEditingTile({ question, category: col })}
                   draggable={!colGenerating}
-                  onDragStart={() => handleDragStart(question.id, col.id, value)}
+                  onDragStart={() => handleDragStart(question.id, col.id, rowIndex)}
                   onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(col.id, value)}
+                  onDrop={() => handleDrop(col.id, rowIndex)}
                   className={`flex flex-col items-center justify-center rounded-xl font-medium text-sm transition-all duration-150 gap-1 px-2 min-h-[90px] ${
                     colGenerating
                       ? "bg-slate-50 text-slate-400 border-2 border-dashed border-slate-200 cursor-not-allowed"
@@ -870,7 +867,7 @@ export default function GameBoard() {
                 ) : (
                   <>
                     <span className="px-3 py-1 rounded-lg font-bold text-sm" style={{ backgroundColor: "var(--accent)", color: "var(--foreground)" }}>
-                      ${value}
+                      ${question.value}
                     </span>
                     {editMode && (
                       <div className="absolute inset-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/95 rounded-xl flex flex-col items-center justify-center gap-1 z-10 pointer-events-none">

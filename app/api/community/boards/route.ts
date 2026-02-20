@@ -17,10 +17,17 @@ export async function GET(req: Request) {
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
     const offset = (page - 1) * limit;
 
+    const mode = searchParams.get("mode") || "";
+
     // Build query
     let query = supabase
       .from("community_boards")
       .select("*", { count: "exact" });
+
+    // Mode filter
+    if (mode === "trivia_free4all" || mode === "classic_jeopardy") {
+      query = query.eq("mode", mode);
+    }
 
     // Search filter
     if (search.trim()) {
@@ -73,6 +80,7 @@ export async function GET(req: Request) {
       description: b.description,
       boardData: b.board_data,
       categoryNames: b.category_names,
+      mode: b.mode || null,
       upvotes: b.upvotes,
       downvotes: b.downvotes,
       saveCount: b.save_count,
@@ -101,7 +109,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { boardId, title, description } = await req.json();
+    const { boardId, title, description, mode } = await req.json();
 
     if (!boardId || !title?.trim()) {
       return NextResponse.json({ error: "boardId and title are required" }, { status: 400 });
@@ -144,6 +152,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "This board is already published" }, { status: 409 });
     }
 
+    // Validate mode if provided
+    const validModes = ["trivia_free4all", "classic_jeopardy"];
+    const boardMode = validModes.includes(mode) ? mode : null;
+
     // Insert community board
     const { data: communityBoard, error: insertError } = await supabase
       .from("community_boards")
@@ -155,6 +167,7 @@ export async function POST(req: Request) {
         description: (description || "").trim().slice(0, 200),
         board_data: board.board_data,
         category_names: categoryNames,
+        mode: boardMode,
       })
       .select("id")
       .single();

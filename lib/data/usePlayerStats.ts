@@ -170,10 +170,26 @@ export function usePlayerStats() {
     [user, playerStats, supabase, loadPlayerStats]
   );
 
+  const clearAllStats = useCallback(async () => {
+    if (!user) return;
+    try {
+      // Delete player answers first (FK constraint)
+      await supabase.from("player_answers").delete().eq("user_id", user.id);
+      // Delete player stats
+      await supabase.from("player_stats").delete().eq("user_id", user.id);
+      // Clear legacy localStorage stats
+      try { localStorage.removeItem("triviaMasters.playerStats.v1"); } catch {}
+      setPlayerStats([]);
+    } catch (error) {
+      console.error("Error clearing stats:", error);
+    }
+  }, [user, supabase]);
+
   return {
     playerStats,
     loading,
     recordPlayerAnswer,
+    clearAllStats,
     reload: loadPlayerStats,
   };
 }

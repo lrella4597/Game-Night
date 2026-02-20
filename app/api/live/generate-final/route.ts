@@ -20,6 +20,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "sessionId is required" }, { status: 400 });
     }
 
+    // Verify user is the host of this session
+    const { data: session, error: sessionError } = await supabase
+      .from("live_sessions")
+      .select("id")
+      .eq("id", sessionId)
+      .eq("host_id", user.id)
+      .single();
+
+    if (sessionError || !session) {
+      return NextResponse.json({ error: "Not authorized for this session" }, { status: 403 });
+    }
+
     if (!process.env.ANTHROPIC_API_KEY) {
       throw new Error("API key not configured");
     }

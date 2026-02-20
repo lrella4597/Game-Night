@@ -10,32 +10,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { boardId, vote } = await req.json();
+    const { categoryId } = await req.json();
 
-    if (!boardId || ![1, 0].includes(vote)) {
-      return NextResponse.json({ error: "boardId and vote (1 or 0) are required" }, { status: 400 });
+    if (!categoryId) {
+      return NextResponse.json({ error: "categoryId is required" }, { status: 400 });
     }
 
-    // Call the vote function
-    const { data, error } = await supabase.rpc("vote_community_board", {
-      p_board_id: boardId,
+    // Call the toggle-vote function
+    const { data, error } = await supabase.rpc("vote_community_category", {
+      p_category_id: categoryId,
       p_user_id: user.id,
-      p_vote: vote,
     });
 
     if (error) {
-      console.error("Vote error:", error);
+      console.error("Category vote error:", error);
       return NextResponse.json({ error: "Failed to vote" }, { status: 500 });
     }
 
-    const result = data?.[0] || { new_upvotes: 0, new_downvotes: 0 };
+    const result = data?.[0] || { new_upvotes: 0 };
 
     return NextResponse.json({
       upvotes: result.new_upvotes,
-      downvotes: result.new_downvotes,
     });
   } catch (err) {
-    console.error("Vote error:", err);
+    console.error("Category vote error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

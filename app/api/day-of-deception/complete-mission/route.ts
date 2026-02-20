@@ -43,7 +43,9 @@ export async function POST(req: Request) {
         completed_at: new Date().toISOString(),
         ...(proof ? { completed_proof: proof } : {}),
       })
-      .eq("id", missionId);
+      .eq("id", missionId)
+      .eq("player_id", playerId)
+      .eq("session_id", sessionId);
 
     // Award +1 shadow token to the player
     const { data: player } = await supabase
@@ -58,7 +60,8 @@ export async function POST(req: Request) {
     await supabase
       .from("traitors_day_players")
       .update({ shadow_tokens: newTokenCount })
-      .eq("id", playerId);
+      .eq("id", playerId)
+      .eq("session_id", sessionId);
 
     return NextResponse.json({ success: true, newTokenCount });
   } catch (err) {

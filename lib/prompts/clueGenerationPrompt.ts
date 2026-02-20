@@ -215,33 +215,9 @@ NOW GENERATE ONE FINAL JEOPARDY CLUE
 }
 
 /**
- * Difficulty mapping from point values to 1-10 scale
- * This allows backward compatibility with the old system
+ * Difficulty mapping from point values to 1-10 scale.
+ * Returns a fixed difficulty of 7 for all questions — hard but fair.
  */
-export function pointValueToDifficulty(pointValue: number): number {
-  // Map common point values to difficulties
-  const mapping: Record<number, number> = {
-    100: 2,
-    200: 4,
-    300: 5,
-    400: 7,
-    500: 8,
-    600: 9,
-    800: 9,
-    1000: 10,
-  };
-
-  // If exact match exists, use it
-  if (mapping[pointValue]) {
-    return mapping[pointValue];
-  }
-
-  // Otherwise, linearly interpolate
-  // 100-500 range → 2-8 difficulty
-  if (pointValue <= 500) {
-    return Math.max(1, Math.min(10, Math.round(2 + ((pointValue - 100) / 400) * 6)));
-  }
-
-  // 500+ → 8-10 difficulty
-  return Math.max(8, Math.min(10, Math.round(8 + ((pointValue - 500) / 500) * 2)));
+export function pointValueToDifficulty(_pointValue: number): number {
+  return 7;
 }

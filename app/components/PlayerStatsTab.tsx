@@ -8,9 +8,10 @@ import LoadingSpinner from "./LoadingSpinner";
 import OverallStatsOverview from "./charts/OverallStatsOverview";
 
 export default function PlayerStatsTab() {
-  const { teams, loading: teamsLoading } = useTeams();
-  const { playerStats, loading: statsLoading } = usePlayerStats();
+  const { teams, loading: teamsLoading, saveTeams } = useTeams();
+  const { playerStats, loading: statsLoading, clearAllStats } = usePlayerStats();
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerStats | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // If a player is selected, show their detail view
   if (selectedPlayer) {
@@ -59,13 +60,53 @@ export default function PlayerStatsTab() {
 
   return (
     <div className="w-full max-w-4xl flex flex-col gap-6 pb-24">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
-          Player Stats
-        </h2>
-        <p className="text-slate-600 text-sm mt-0.5">
-          Leaderboard and team statistics
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
+            Player Stats
+          </h2>
+          <p className="text-slate-600 text-sm mt-0.5">
+            Leaderboard and team statistics
+          </p>
+        </div>
+        {(playerStats.length > 0 || teams.some(t => t.score !== 0)) && (
+          <div className="relative">
+            {!showResetConfirm ? (
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-all"
+              >
+                Reset All Stats
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                <span className="text-xs text-red-700">Reset all scores &amp; stats?</span>
+                <button
+                  onClick={async () => {
+                    await clearAllStats();
+                    // Reset all team scores and power-ups
+                    const resetTeams = teams.map(t => ({
+                      ...t,
+                      score: 0,
+                      powerUps: { doubleDown: false, doubleDip: false, phoneAFriend: false },
+                    }));
+                    await saveTeams(resetTeams);
+                    setShowResetConfirm(false);
+                  }}
+                  className="px-2 py-1 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded transition-all"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  className="px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded transition-all"
+                >
+                  No
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Overall Stats Overview */}

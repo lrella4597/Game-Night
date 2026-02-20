@@ -15,6 +15,7 @@ import PlayerFinalDraw from "@/app/components/live/player/PlayerFinalDraw";
 import PlayerDailyDoubleWager from "@/app/components/live/player/PlayerDailyDoubleWager";
 import type { LiveSession, LivePlayer, LiveSessionRow, LivePlayerRow, GamePhase } from "@/lib/live/types";
 import { sessionFromRow as toSession, playerFromRow as toPlayer } from "@/lib/live/types";
+import HowToPlayModal from "@/app/components/HowToPlayModal";
 
 export default function PlayerGamePage() {
   const params = useParams();
@@ -297,8 +298,42 @@ export default function PlayerGamePage() {
 
   const currentPlayer = players.find((p) => p.id === playerId);
 
+  const jeopardyPlayerHelp = (
+    <HowToPlayModal
+      gameKey="howto_jeopardy_player"
+      title="How to Play Jeopardy"
+      accentColor="blue"
+      sections={[
+        {
+          title: "Joining",
+          steps: [
+            "Enter the join code from the host and pick a display name",
+            "Wait in the lobby until the host starts the game",
+          ],
+        },
+        {
+          title: "Gameplay",
+          steps: [
+            "The host picks clues from the board — watch for the question",
+            "When the buzzer opens, tap the BUZZ button as fast as you can",
+            "If you buzz first, answer out loud — the host judges correct or incorrect",
+            "Correct = earn points, Incorrect = lose points",
+          ],
+        },
+        {
+          title: "Special Rounds",
+          steps: [
+            "Daily Double: If chosen, you wager before answering alone",
+            "Final Jeopardy: Wager any amount of your score, then draw or type your answer before time runs out",
+          ],
+        },
+      ]}
+    />
+  );
+
   return (
     <div className="flex flex-col min-h-screen">
+      <div className="fixed top-4 right-4 z-40">{jeopardyPlayerHelp}</div>
       {/* Score header */}
       <div className="bg-black/30 px-4 py-3 flex items-center justify-between">
         <span className="text-white font-medium">{playerName}</span>

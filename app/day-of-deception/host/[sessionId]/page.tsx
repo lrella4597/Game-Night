@@ -16,6 +16,7 @@ import DayHostRoundtable from "@/app/components/day-of-deception/host/DayHostRou
 import DayHostVoting from "@/app/components/day-of-deception/host/DayHostVoting";
 import DayHostReveal from "@/app/components/day-of-deception/host/DayHostReveal";
 import DayHostEnd from "@/app/components/day-of-deception/host/DayHostEnd";
+import HowToPlayModal from "@/app/components/HowToPlayModal";
 import type {
   DayPhase,
   DaySessionConfig,
@@ -373,26 +374,72 @@ export default function TraitorsDayHostPage() {
 
   if (!config) return null;
 
+  const dodHostHelp = (
+    <HowToPlayModal
+      gameKey="howto_dod_host"
+      title="How to Host Day of Deception"
+      accentColor="red"
+      sections={[
+        {
+          title: "Setup",
+          steps: [
+            "Share the join code so players can join on their phones",
+            "Wait for everyone to connect, then click \"Start Game\"",
+            "Roles are assigned secretly — some players become Deceivers",
+          ],
+        },
+        {
+          title: "Running the Day",
+          steps: [
+            "During Freeplay, use \"Send Mission\" to give players secret tasks",
+            "Use \"Start Event\" to run timed group activities (Deceivers get secret objectives)",
+            "Missions and events create clues about who the Deceivers are",
+            "When ready, click \"Start Roundtable\" for players to discuss suspicions",
+          ],
+        },
+        {
+          title: "Voting & Reveal",
+          steps: [
+            "After the roundtable discussion, click \"Start Voting\"",
+            "Players vote on who they think is a Deceiver",
+            "Click \"Resolve Vote\" to reveal results and the accused player's role",
+            "The game ends when all Deceivers are found or they outnumber the Faithful",
+          ],
+        },
+      ]}
+    />
+  );
+
   // Phase rendering
   if (phase === "lobby") {
     return (
-      <DayHostLobby
-        sessionId={sessionId}
-        players={players}
-        joinCode={joinCode}
-        config={config}
-        onStartGame={handleStartGame}
-        onKickPlayer={handleKickPlayer}
-      />
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        <DayHostLobby
+          sessionId={sessionId}
+          players={players}
+          joinCode={joinCode}
+          config={config}
+          onStartGame={handleStartGame}
+          onKickPlayer={handleKickPlayer}
+        />
+      </>
     );
   }
 
   if (phase === "roles_revealed") {
-    return <DayHostRolesRevealed onBeginDay={handleBeginDay} playerCount={players.length} />;
+    return (
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        <DayHostRolesRevealed onBeginDay={handleBeginDay} playerCount={players.length} />
+      </>
+    );
   }
 
   if (phase === "freeplay") {
     return (
+      <>
+      <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
       <DayHostFreeplay
         players={players}
         onSendMission={handleSendMission}
@@ -402,47 +449,60 @@ export default function TraitorsDayHostPage() {
         eventsCompleted={eventsCompleted}
         customEventNames={customEventNames}
       />
+      </>
     );
   }
 
   if (phase === "event_active") {
     return (
-      <DayHostEventActive
-        eventData={eventData}
-        onEndEvent={handleEndEvent}
-        timerRemaining={timerRemaining}
-        timerRunning={timerRunning}
-      />
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        <DayHostEventActive
+          eventData={eventData}
+          onEndEvent={handleEndEvent}
+          timerRemaining={timerRemaining}
+          timerRunning={timerRunning}
+        />
+      </>
     );
   }
 
   if (phase === "roundtable") {
     return (
-      <DayHostRoundtable
-        timerRemaining={timerRemaining}
-        timerRunning={timerRunning}
-        onStartVoting={handleStartVoting}
-      />
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        <DayHostRoundtable
+          timerRemaining={timerRemaining}
+          timerRunning={timerRunning}
+          onStartVoting={handleStartVoting}
+        />
+      </>
     );
   }
 
   if (phase === "voting") {
     return (
-      <DayHostVoting
-        sessionId={sessionId}
-        onResolveVote={handleResolveVote}
-        timerRemaining={timerRemaining}
-        timerRunning={timerRunning}
-      />
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        <DayHostVoting
+          sessionId={sessionId}
+          onResolveVote={handleResolveVote}
+          timerRemaining={timerRemaining}
+          timerRunning={timerRunning}
+        />
+      </>
     );
   }
 
   if (phase === "reveal") {
     return (
-      <DayHostReveal
-        voteResult={voteResult}
-        onEndGame={handleEndGame}
-      />
+      <>
+        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        <DayHostReveal
+          voteResult={voteResult}
+          onEndGame={handleEndGame}
+        />
+      </>
     );
   }
 
