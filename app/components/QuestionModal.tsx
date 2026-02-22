@@ -423,50 +423,77 @@ export default function QuestionModal({
           </button>
         )}
 
-        {/* Award points */}
-        {teams.length > 0 && onAwardPoints && answerRevealed && (
+        {/* Award points + Correct/Incorrect */}
+        {answerRevealed && (
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 mb-4 flex flex-col gap-3">
-            <p className="text-xs font-semibold tracking-tight text-center text-slate-700">
-              Award Points
-            </p>
-            <div className="flex flex-col gap-2">
-              <select value={selectedTeamId} onChange={(e) => { setSelectedTeamId(e.target.value); setSelectedPlayers([]); }} className="w-full rounded-lg px-2 py-2 text-sm font-medium focus:outline-none bg-white border border-slate-200 text-slate-900">
-                <option value="">— Select team —</option>
-                {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-              {selectedTeam && selectedTeam.players.length > 0 && (
-                <div className="flex flex-col gap-1.5">
-                  <p className="text-xs font-semibold text-slate-600">Select player(s) for individual stats:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedTeam.players.map((playerName) => (
-                      <label
-                        key={playerName}
-                        className="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:border-accent/50 cursor-pointer transition-all"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedPlayers.includes(playerName)}
-                          onChange={() => togglePlayer(playerName)}
-                          className="w-4 h-4 rounded border-slate-300 text-accent focus:ring-accent"
-                        />
-                        <span className="text-sm text-slate-900">{playerName}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {selectedPlayers.length > 1 && (
-                    <p className="text-xs text-slate-500 italic">
-                      Points split: {selectedPlayers.length} players × ${(pointValue / selectedPlayers.length).toFixed(0)} each
-                    </p>
+            {teams.length > 0 && onAwardPoints && (
+              <>
+                <p className="text-xs font-semibold tracking-tight text-center text-slate-700">
+                  Award Points
+                </p>
+                <div className="flex flex-col gap-2">
+                  <select value={selectedTeamId} onChange={(e) => { setSelectedTeamId(e.target.value); setSelectedPlayers([]); }} className="w-full rounded-lg px-2 py-2 text-sm font-medium focus:outline-none bg-white border border-slate-200 text-slate-900">
+                    <option value="">— Select team —</option>
+                    {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                  {selectedTeam && selectedTeam.players.length > 0 && (
+                    <div className="flex flex-col gap-1.5">
+                      <p className="text-xs font-semibold text-slate-600">Select player(s) for individual stats:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedTeam.players.map((playerName) => (
+                          <label
+                            key={playerName}
+                            className="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:border-accent/50 cursor-pointer transition-all"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedPlayers.includes(playerName)}
+                              onChange={() => togglePlayer(playerName)}
+                              className="w-4 h-4 rounded border-slate-300 text-accent focus:ring-accent"
+                            />
+                            <span className="text-sm text-slate-900">{playerName}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {selectedPlayers.length > 1 && (
+                        <p className="text-xs text-slate-500 italic">
+                          Points split: {selectedPlayers.length} players × ${(pointValue / selectedPlayers.length).toFixed(0)} each
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
             <div className="flex gap-2">
-              <button onClick={() => handleAward(true)} className="flex-1 py-2.5 rounded-lg font-semibold text-sm hover:scale-105 transition-all bg-green-500 text-white hover:bg-green-600">
-                Correct +${pointValue}
+              <button
+                onClick={() => {
+                  if (teams.length > 0 && onAwardPoints && selectedTeamId) {
+                    handleAward(true);
+                  } else {
+                    playSound?.("correct");
+                    createConfetti();
+                    onMarkUsed(question.id);
+                    onClose();
+                  }
+                }}
+                className="flex-1 py-3 rounded-lg font-bold text-base hover:scale-105 transition-all bg-green-500 text-white hover:bg-green-600"
+              >
+                {teams.length > 0 && selectedTeamId ? `Correct +$${pointValue}` : "Correct ✓"}
               </button>
-              <button onClick={() => handleAward(false)} className="flex-1 py-2.5 rounded-lg font-semibold text-sm hover:scale-105 transition-all bg-red-500 text-white hover:bg-red-600">
-                Incorrect −${pointValue}
+              <button
+                onClick={() => {
+                  if (teams.length > 0 && onAwardPoints && selectedTeamId) {
+                    handleAward(false);
+                  } else {
+                    playSound?.("incorrect");
+                    onMarkUsed(question.id);
+                    onClose();
+                  }
+                }}
+                className="flex-1 py-3 rounded-lg font-bold text-base hover:scale-105 transition-all bg-red-500 text-white hover:bg-red-600"
+              >
+                {teams.length > 0 && selectedTeamId ? `Incorrect −$${pointValue}` : "Incorrect ✗"}
               </button>
             </div>
           </div>
