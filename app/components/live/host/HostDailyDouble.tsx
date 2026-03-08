@@ -107,9 +107,17 @@ export default function HostDailyDouble({
           Show Answer
         </button>
       ) : (
-        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 max-w-2xl w-full text-center">
-          <p className="text-sm text-green-300 uppercase tracking-wider mb-1">Correct Response</p>
-          <p className="text-2xl text-green-400 font-bold">{answer}</p>
+        <div className="flex flex-col items-center gap-2">
+          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 max-w-2xl w-full text-center">
+            <p className="text-sm text-green-300 uppercase tracking-wider mb-1">Correct Response</p>
+            <p className="text-2xl text-green-400 font-bold">{answer}</p>
+          </div>
+          <button
+            onClick={() => setShowAnswer(false)}
+            className="text-white/40 hover:text-white/70 text-xs underline transition-colors"
+          >
+            Hide Answer
+          </button>
         </div>
       )}
 

@@ -79,12 +79,16 @@ export default function HostPage() {
   });
 
   const hostControls = useHostControls({ sessionId, broadcast });
-  const { play: playSound } = useSoundEffects();
+  const { play: playSound, playBuzz } = useSoundEffects();
   const { startThinkMusic, startFinalThinkMusic, startIntroMusic, stop: stopThinkMusic } = useThinkMusic();
 
-  // Ref for playSound so buzz listener doesn't re-subscribe on settings change
+  // Refs so buzz listener always uses latest values without re-subscribing
   const playSoundRef = useRef(playSound);
   playSoundRef.current = playSound;
+  const playBuzzRef = useRef(playBuzz);
+  playBuzzRef.current = playBuzz;
+  const playersRef = useRef(players);
+  playersRef.current = players;
 
   const phase: GamePhase = gameState?.phase || "lobby";
   const currentRound = gameState?.currentRound ?? 1;
@@ -197,7 +201,8 @@ export default function HostPage() {
         // Auto-select first buzzer
         if (!prev.currentAnswererId && newQueue.length > 0) {
           const firstBuzzer = newQueue[0];
-          playSoundRef.current("buzz-in");
+          const playerIdx = playersRef.current.findIndex((p) => p.id === firstBuzzer.playerId);
+          playBuzzRef.current(playerIdx >= 0 ? playerIdx : 0);
           supabase
             .from("live_game_state")
             .update({
@@ -515,7 +520,8 @@ export default function HostPage() {
     if (remainingQueue.length > 0) {
       // Auto-advance to next player who already buzzed
       const next = remainingQueue[0];
-      playSoundRef.current("buzz-in");
+      const nextIdx = players.findIndex((p) => p.id === next.playerId);
+      playBuzz(nextIdx >= 0 ? nextIdx : 0);
       setGameState((prev) =>
         prev ? { ...prev, buzzerQueue: remainingQueue, currentAnswererId: next.playerId, phase: "answer_check" as GamePhase } : prev
       );
@@ -973,7 +979,7 @@ export default function HostPage() {
             timerRunning={timerRunning}
             showAnswer={showAnswer}
             onOpenBuzzer={handleOpenBuzzer}
-            onShowAnswer={() => setShowAnswer(true)}
+            onShowAnswer={() => setShowAnswer((v) => !v)}
             onSkip={handleSkip}
           />
         )}

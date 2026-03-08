@@ -43,7 +43,15 @@ export default function HostClueDisplay({
       {/* Answer (host only) */}
       <div className="mb-8">
         {showAnswer ? (
-          <p className="text-green-400 text-2xl font-bold">{answer}</p>
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-green-400 text-2xl font-bold">{answer}</p>
+            <button
+              onClick={onShowAnswer}
+              className="text-white/40 hover:text-white/70 text-xs underline transition-colors"
+            >
+              Hide Answer
+            </button>
+          </div>
         ) : (
           <button
             onClick={onShowAnswer}

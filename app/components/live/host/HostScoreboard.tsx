@@ -29,24 +29,24 @@ export default function HostScoreboard({ players, currentAnswererId, onAdjustSco
   }
 
   return (
-    <div className="w-full bg-black/40 border-t border-white/10 px-4 py-3">
-      <div className="flex items-center justify-center gap-4 flex-wrap">
+    <div className="w-full bg-black/40 border-t border-white/10 px-4 py-4">
+      <div className="flex items-center justify-center gap-5 flex-wrap">
         {sorted.map((player) => (
           <div
             key={player.id}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl ${
               player.id === currentAnswererId
                 ? "bg-[#FFD700]/20 ring-2 ring-[#FFD700]"
                 : "bg-white/5"
             }`}
           >
             <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
               style={{ backgroundColor: player.avatarColor }}
             >
               {player.displayName[0].toUpperCase()}
             </div>
-            <span className="text-white text-sm font-medium truncate max-w-[80px]">
+            <span className="text-white text-lg font-medium truncate max-w-[120px]">
               {player.displayName}
             </span>
 
@@ -62,14 +62,14 @@ export default function HostScoreboard({ players, currentAnswererId, onAdjustSco
                   onBlur={() => commitEdit(player)}
                   onKeyDown={(e) => { if (e.key === "Escape") setEditingId(null); }}
                   autoFocus
-                  className="w-24 px-1 py-0.5 text-sm font-bold tabular-nums bg-black/60 text-white border border-[#FFD700] rounded text-center"
+                  className="w-28 px-1 py-0.5 text-xl font-bold tabular-nums bg-black/60 text-white border border-[#FFD700] rounded text-center"
                 />
               </form>
             ) : (
               <button
                 onClick={() => startEdit(player)}
                 title={onAdjustScore ? "Click to adjust score" : undefined}
-                className={`text-sm font-bold tabular-nums ${
+                className={`text-xl font-bold tabular-nums ${
                   onAdjustScore ? "hover:underline cursor-pointer" : "cursor-default"
                 } ${player.score >= 0 ? "text-green-400" : "text-red-400"}`}
               >
