@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import LiveTimer from "@/app/components/live/shared/LiveTimer";
 
 interface HostClueDisplayProps {
@@ -27,6 +28,17 @@ export default function HostClueDisplay({
   onShowAnswer,
   onSkip,
 }: HostClueDisplayProps) {
+  // Read the clue aloud when it first appears
+  useEffect(() => {
+    if (!clueText || typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(clueText);
+    utterance.rate = 0.88;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+    return () => { window.speechSynthesis.cancel(); };
+  }, [clueText]);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] px-8 text-center">
       {/* Category + Value */}

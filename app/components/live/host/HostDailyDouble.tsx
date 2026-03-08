@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { LivePlayer } from "@/lib/live/types";
 import PlayerAvatar from "@/app/components/live/shared/PlayerAvatar";
 
@@ -30,6 +30,17 @@ export default function HostDailyDouble({
   onIncorrect,
 }: HostDailyDoubleProps) {
   const [showAnswer, setShowAnswer] = useState(false);
+
+  // Read the clue aloud when the answer phase begins
+  useEffect(() => {
+    if (phase !== "daily_double_answer" || !clueText || typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(clueText);
+    utterance.rate = 0.88;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+    return () => { window.speechSynthesis.cancel(); };
+  }, [phase, clueText]);
 
   // ── Wager phase ────────────────────────────────────────────────────────────
 
