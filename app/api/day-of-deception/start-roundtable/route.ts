@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendPushToSession } from "@/lib/push";
 
 export async function POST(req: Request) {
   try {
@@ -38,6 +39,12 @@ export async function POST(req: Request) {
         last_action: "roundtable_started",
       })
       .eq("session_id", sessionId);
+
+    await sendPushToSession(supabase, sessionId, {
+      title: "🗣️ Roundtable Has Started",
+      body: "Come together — it's time to discuss who you suspect!",
+      tag: "roundtable",
+    });
 
     return NextResponse.json({ success: true, timerDuration: timerDurationSeconds });
   } catch (err) {

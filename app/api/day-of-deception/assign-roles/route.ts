@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendPushToSession } from "@/lib/push";
 
 export async function POST(req: Request) {
   try {
@@ -69,6 +70,12 @@ export async function POST(req: Request) {
       .from("traitors_day_sessions")
       .update({ status: "active", started_at: new Date().toISOString() })
       .eq("id", sessionId);
+
+    await sendPushToSession(supabase, sessionId, {
+      title: "🎭 Your Role Has Been Assigned",
+      body: "Check your phone to see if you are Faithful or Deceiver!",
+      tag: "role",
+    });
 
     return NextResponse.json({ success: true, deceiverCount });
   } catch (err) {

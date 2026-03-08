@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getRandomMission } from "@/lib/day-of-deception/missions";
+import { sendPushToPlayer } from "@/lib/push";
 
 export async function POST(req: Request) {
   try {
@@ -102,6 +103,13 @@ export async function POST(req: Request) {
         last_action: "mission_sent",
       })
       .eq("session_id", sessionId);
+
+    // Silently push-notify the traitor
+    await sendPushToPlayer(supabase, sessionId, targetPlayerId, {
+      title: "🕵️ New Secret Mission",
+      body: mission.text,
+      tag: "mission",
+    });
 
     return NextResponse.json({
       missionId: missionRow.id,

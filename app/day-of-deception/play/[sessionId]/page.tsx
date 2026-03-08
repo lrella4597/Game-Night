@@ -16,6 +16,7 @@ import DayPlayerReveal from "@/app/components/day-of-deception/player/DayPlayerR
 import DayPlayerEnd from "@/app/components/day-of-deception/player/DayPlayerEnd";
 import type { DayPhase, PlayerRole, DayMission } from "@/lib/day-of-deception/types";
 import HowToPlayModal from "@/app/components/HowToPlayModal";
+import { usePushNotifications } from "@/lib/usePushNotifications";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyPayload = any;
@@ -120,6 +121,9 @@ export default function TraitorsDayPlayerPage() {
     playerToken: playerToken || "",
     broadcast,
   });
+
+  const { permission: pushPermission, subscribed: pushSubscribed, subscribe: subscribePush } =
+    usePushNotifications({ playerId: playerId || "", sessionId });
 
   // ── Timer ─────────────────────────────────────────────────────────────────
 
@@ -341,6 +345,22 @@ export default function TraitorsDayPlayerPage() {
     return (
       <>
         <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        {/* Notification permission prompt */}
+        {pushPermission !== "denied" && !pushSubscribed && (
+          <div className="fixed bottom-4 left-4 right-4 z-50 bg-gray-900 border border-green-500/40 rounded-xl p-4 flex items-center gap-3 shadow-lg">
+            <span className="text-2xl">🔔</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-semibold">Enable notifications</p>
+              <p className="text-white/50 text-xs">Get secret alerts even when your phone is locked</p>
+            </div>
+            <button
+              onClick={subscribePush}
+              className="shrink-0 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold rounded-lg transition-colors"
+            >
+              Allow
+            </button>
+          </div>
+        )}
         <DayPlayerLobby players={players} playerName={playerName} />
       </>
     );

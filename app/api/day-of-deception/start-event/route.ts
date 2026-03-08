@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getRandomEvent } from "@/lib/day-of-deception/events";
+import { sendPushToSession } from "@/lib/push";
 
 export async function POST(req: Request) {
   try {
@@ -88,6 +89,12 @@ export async function POST(req: Request) {
         last_action: "event_started",
       })
       .eq("session_id", sessionId);
+
+    await sendPushToSession(supabase, sessionId, {
+      title: `📣 New Event: ${event.name}`,
+      body: "Check your phone — a group event has started!",
+      tag: "event",
+    });
 
     return NextResponse.json({
       eventName: event.name,
