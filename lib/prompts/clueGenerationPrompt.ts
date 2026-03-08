@@ -216,8 +216,9 @@ NOW GENERATE ONE FINAL JEOPARDY CLUE
 
 /**
  * Difficulty mapping from point values to 1-10 scale.
- * Returns a fixed difficulty of 7 for all questions — hard but fair.
+ * $200 → 2, $400 → 4, $600 → 6, $800 → 8, $1000 → 10.
+ * Clamped to [1, 10] so Double Jeopardy values don't exceed the scale.
  */
-export function pointValueToDifficulty(_pointValue: number): number {
-  return 7;
+export function pointValueToDifficulty(pointValue: number): number {
+  return Math.min(10, Math.max(1, Math.round(pointValue / 100)));
 }
