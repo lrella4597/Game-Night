@@ -286,6 +286,84 @@ export const DEFAULT_LIBRARY: CategoryLibraryItem[] = [
       "Q: Which came first — the invention of the microwave oven or the first McDonald's franchise? A: The microwave oven (1945) — McDonald's franchised in 1953\nQ: Which happened first — YouTube launching or Facebook opening to the public? A: Facebook (2004) — YouTube launched in 2005\nQ: Which came first — the moon landing or Woodstock? A: The moon landing (July 1969) — Woodstock was August 1969",
     createdAt: 0,
   },
+  {
+    id: "lib-movie-quotes",
+    name: "MOVIE QUOTES",
+    promptTemplate:
+      "Generate Jeopardy clues where the clue is a famous line of dialogue from a movie, and the ANSWER is the title of that film. Pull from iconic, widely-recognized lines spanning action, drama, comedy, horror, sci-fi, and animated films from the 1950s to present. Target 7/10 difficulty — go beyond 'Here's looking at you, kid' and 'I'll be back.' Include memorable lines from beloved cult films, specific villain monologues, and character-defining moments that true movie fans would place. The quote must be unambiguously from one film.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = lines most moviegoers would recognize; $1000 = iconic lines from cult classics, supporting characters, or deep-cut moments that casual viewers would miss.",
+    answerFormatGuidance:
+      "The answer is the movie title only — not the character or actor.",
+    examples:
+      "Q: 'You can't handle the truth!' A: A Few Good Men\nQ: 'Why so serious?' A: The Dark Knight\nQ: 'To infinity and beyond!' A: Toy Story\nQ: 'I see dead people.' A: The Sixth Sense\nQ: 'Just keep swimming.' A: Finding Nemo",
+    createdAt: 0,
+  },
+  {
+    id: "lib-nicknames",
+    name: "NICKNAMES",
+    promptTemplate:
+      "Generate Jeopardy clues where the clue gives a famous person's well-known nickname or alias, and the ANSWER is their real full name. OR the clue gives the real name and the answer is their iconic nickname. Mix athletes, musicians, politicians, historical figures, and pop culture icons. Target 7/10 difficulty — go beyond 'The King of Rock and Roll.' Include sporting legends, hip-hop monikers, royal titles, and military nicknames that people know but might not connect to the real name. Never use nicknames that belong to more than one famous person.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = very famous nicknames everyone has heard; $1000 = nicknames from historical figures, lesser-known sports legends, or real names behind iconic stage personas.",
+    answerFormatGuidance:
+      "The answer is the full real name of the person (or the nickname if the clue gives the real name).",
+    examples:
+      "Q: 'The Greatest' — this boxing legend gave himself this nickname. A: Muhammad Ali\nQ: 'Slim Shady' is the alter ego of this Detroit rapper. A: Eminem (Marshall Mathers)\nQ: 'The Iron Lady' was the nickname of this British Prime Minister. A: Margaret Thatcher\nQ: 'His Airness' — this Chicago Bulls legend soared above the competition. A: Michael Jordan",
+    createdAt: 0,
+  },
+  {
+    id: "lib-complete-the-phrase",
+    name: "COMPLETE THE PHRASE",
+    promptTemplate:
+      "Generate Jeopardy clues where the clue is a common English idiom, proverb, or well-known phrase with the LAST word or words blanked out as '___'. The ANSWER is the missing word(s). Use widely-known expressions that people use in daily life or have heard many times. Target 7/10 difficulty — the phrase should be familiar enough that people feel it on the tip of their tongue, but not so obvious it's too easy. Mix classic proverbs, pop culture catchphrases, sports expressions, and everyday idioms.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = extremely common phrases where the missing word is instinctive; $1000 = less common proverbs, regional expressions, or phrases where multiple words feel plausible.",
+    answerFormatGuidance:
+      "The answer is the exact word or short phrase that completes the expression. Keep it to 1–4 words.",
+    examples:
+      "Q: 'Actions speak louder than ___.' A: Words\nQ: 'You can't judge a book by its ___.' A: Cover\nQ: 'The pen is mightier than the ___.' A: Sword\nQ: 'When in Rome, do as the Romans ___.' A: Do\nQ: 'Don't count your chickens before they ___.' A: Hatch",
+    createdAt: 0,
+  },
+  {
+    id: "lib-animal-kingdom",
+    name: "ANIMAL KINGDOM",
+    promptTemplate:
+      "Generate trivia questions about animals: surprising facts, behaviors, anatomy, records, habitats, group names, and animal science. Cover mammals, reptiles, birds, insects, marine life, and exotic species. Target 7/10 difficulty — go beyond 'what's the fastest land animal?' Include counterintuitive animal facts, surprising group names (a 'murder' of crows), record holders (longest lifespan, strangest defense mechanism), and fascinating evolutionary adaptations.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = interesting animal facts most people have heard but find surprising; $1000 = specific species behaviors, obscure group names, or animal biology that would stump a biology teacher.",
+    answerFormatGuidance:
+      "Answers should be animal names, scientific terms, numbers, or short phrases.",
+    examples:
+      "Q: A group of flamingos is called a 'flamboyance', but what is a group of owls called? A: A parliament\nQ: This animal has the longest recorded lifespan of any vertebrate, living over 400 years. A: The Greenland shark\nQ: This mammal is the only one born with a fully calcified skeleton. A: The wildebeest\nQ: Octopuses have three of these — one for each gill. A: Hearts",
+    createdAt: 0,
+  },
+  {
+    id: "lib-record-breakers",
+    name: "RECORD BREAKERS",
+    promptTemplate:
+      "Generate trivia questions about world records, Guinness records, and remarkable human/natural/sporting achievements. Cover athletic records, natural phenomena records, entertainment records, bizarre world records, and scientific extremes. Target 7/10 difficulty — go beyond 'tallest building' and 'fastest runner.' Include surprising 'most of' records, longest streaks, fastest completions, and counterintuitive extremes. Each clue should describe the record, and the answer should be the person, place, animal, or thing that holds it.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = well-known records people have heard of but may not pin to the holder; $1000 = niche, bizarre, or surprisingly obscure records that require specialized knowledge.",
+    answerFormatGuidance:
+      "Answers should be a name, place, country, number, or short phrase — whatever identifies the record holder.",
+    examples:
+      "Q: This country has won the most FIFA World Cup titles, with 5 championships. A: Brazil\nQ: She holds the record for most Grammy wins by any artist in history. A: Beyoncé\nQ: This is the world's most-visited website as of 2024. A: Google\nQ: This mountain holds the record for farthest point from Earth's center (not Everest). A: Mount Chimborazo",
+    createdAt: 0,
+  },
+  {
+    id: "lib-plot-twist",
+    name: "PLOT TWIST",
+    promptTemplate:
+      "Generate Jeopardy clues that describe a famous plot twist, surprise ending, or shocking reveal from a movie or TV show — WITHOUT giving away the title in the clue. The ANSWER is the title of the film or show. Describe the twist from the audience's perspective ('In this film, the hero discovers the villain was his father all along'). Target 7/10 difficulty — use twists from beloved classics and modern hits that are well-known in pop culture. The clue should have enough detail to be solvable but shouldn't be so obvious it gives it away immediately.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = twists so iconic they've become cultural shorthand; $1000 = twists from acclaimed but less mainstream films or shows, or where the twist itself is subtle.",
+    answerFormatGuidance:
+      "The answer is the movie or TV show title only.",
+    examples:
+      "Q: In this 1999 thriller, the boy who 'sees dead people' doesn't realize he is one. A: The Sixth Sense\nQ: This 1995 crime film ends with the revelation that the meek suspect telling the story IS the criminal mastermind Keyser Söze. A: The Usual Suspects\nQ: In this Star Wars film, Darth Vader reveals he is the hero's father. A: The Empire Strikes Back\nQ: In this animated film, the friendly mentor turns out to be the villain, Lotso, who has been manipulating everyone. A: Toy Story 3",
+    createdAt: 0,
+  },
 ];
 
 const LIB_KEY = "triviaMasters.categories.v1";
