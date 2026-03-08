@@ -14,6 +14,7 @@ export default function SetupTab() {
   const { currentBoard, saveCurrentBoard, loading: boardsLoading } = useBoards();
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const [newPlayerName, setNewPlayerName] = useState<Record<string, string>>({});
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   // Local draft state for team names — avoids controlled-input issues during rapid typing
   const [teamNameDrafts, setTeamNameDrafts] = useState<Record<string, string>>({});
 
@@ -92,6 +93,18 @@ export default function SetupTab() {
     );
   }
 
+  async function handleSaveAll() {
+    setSaveStatus("saving");
+    // Flush any pending name drafts into teams before saving
+    const merged = teams.map((t) => ({
+      ...t,
+      name: (teamNameDrafts[t.id] ?? t.name).trim() || t.name,
+    }));
+    await saveTeams(merged, true);
+    setSaveStatus("saved");
+    setTimeout(() => setSaveStatus("idle"), 2000);
+  }
+
   async function handleApplyFlatPoints() {
     const value = settings.flatPointValue;
     if (!window.confirm(`Change all question values on the board to $${value}?\n\nThe page will reload to show the updated values.`)) return;
@@ -152,6 +165,19 @@ export default function SetupTab() {
             >
               Reset Power-Ups
             </button>
+            {teams.length > 0 && (
+              <button
+                onClick={handleSaveAll}
+                disabled={saveStatus === "saving"}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                  saveStatus === "saved"
+                    ? "bg-green-500 text-white"
+                    : "bg-slate-800 hover:bg-slate-700 text-white"
+                }`}
+              >
+                {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "✓ Saved" : "Save Teams"}
+              </button>
+            )}
             <button
               onClick={handleAddTeam}
               className="btn-primary"
