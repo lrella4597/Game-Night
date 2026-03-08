@@ -79,9 +79,9 @@ Difficulty guidance:
 STATE MEMORY (AVOID THESE)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-SEEN ANSWERS: ${JSON.stringify(state.seen_answers.slice(-50))}
-SEEN TOPICS: ${JSON.stringify(state.seen_topics.slice(-50))}
-SEEN CLUES: ${JSON.stringify(state.seen_clues.slice(-30))}
+SEEN ANSWERS: ${JSON.stringify(state.seen_answers.slice(-200))}
+SEEN TOPICS: ${JSON.stringify(state.seen_topics.slice(-200))}
+SEEN CLUES: ${JSON.stringify(state.seen_clues.slice(-100))}
 
 ${state.favorite_clues.length > 0 ? `
 FAVORITE CLUES (imitate this style):

@@ -106,9 +106,9 @@ Generate a fresh, high-quality clue that follows all anti-repeat rules below.
 STATE MEMORY (CRITICAL)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-SEEN.answers: ${JSON.stringify(state.seen_answers.slice(-50))}
-SEEN.topics: ${JSON.stringify(state.seen_topics.slice(-50))}
-SEEN.clues: ${JSON.stringify(state.seen_clues.slice(-20))}
+SEEN.answers: ${JSON.stringify(state.seen_answers.slice(-200))}
+SEEN.topics: ${JSON.stringify(state.seen_topics.slice(-200))}
+SEEN.clues: ${JSON.stringify(state.seen_clues.slice(-100))}
 
 FAVORITES: ${JSON.stringify(state.favorite_clues.slice(-10))}
 DISLIKES: ${JSON.stringify(state.disliked_clues.slice(-20))}

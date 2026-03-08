@@ -102,7 +102,9 @@ export function useGenerationState() {
     loadState();
   }, [loadState]);
 
-  // Add answers, topics, and clues to seen lists (SIMPLIFIED - no RPC)
+  // Add answers, topics, and clues to seen lists
+  // Reads fresh from DB first to avoid stale-closure overwrite bugs when called
+  // multiple times in quick succession (e.g. regenerating several columns).
   const addToSeen = useCallback(
     async (params: {
       answers?: string[];
@@ -114,10 +116,23 @@ export function useGenerationState() {
       try {
         console.log("💾 Saving to generation state:", params);
 
-        // Build new arrays (deduplicated)
-        const newAnswers = [...new Set([...state.seen_answers, ...(params.answers || [])])].slice(-50);
-        const newTopics = [...new Set([...state.seen_topics, ...(params.topics || [])])].slice(-50);
-        const newClues = [...new Set([...state.seen_clues, ...(params.clues || [])])].slice(-30);
+        // Always read the latest DB values — never trust the React state snapshot
+        // because multiple rapid calls would all start from the same stale baseline.
+        const { data: fresh } = await supabase
+          .from("generation_state")
+          .select("seen_answers, seen_topics, seen_clues, favorite_clues, disliked_clues")
+          .eq("user_id", user.id)
+          .single();
+
+        const currentAnswers: string[] = fresh?.seen_answers || [];
+        const currentTopics: string[] = fresh?.seen_topics || [];
+        const currentClues: string[] = fresh?.seen_clues || [];
+
+        // Merge and deduplicate; keep a generous window so repeats are remembered
+        // across many sessions (200 answers ≈ 8 full boards)
+        const newAnswers = [...new Set([...currentAnswers, ...(params.answers || [])])].slice(-200);
+        const newTopics = [...new Set([...currentTopics, ...(params.topics || [])])].slice(-200);
+        const newClues = [...new Set([...currentClues, ...(params.clues || [])])].slice(-100);
 
         const { error } = await supabase
           .from("generation_state")
@@ -127,21 +142,25 @@ export function useGenerationState() {
               seen_answers: newAnswers,
               seen_topics: newTopics,
               seen_clues: newClues,
-              favorite_clues: state.favorite_clues,
-              disliked_clues: state.disliked_clues,
+              favorite_clues: fresh?.favorite_clues ?? [],
+              disliked_clues: fresh?.disliked_clues ?? [],
             },
             { onConflict: "user_id" }
           );
 
         if (error) throw error;
 
-        console.log("✅ Generation state saved!");
+        console.log("✅ Generation state saved! Totals:", {
+          answers: newAnswers.length,
+          topics: newTopics.length,
+          clues: newClues.length,
+        });
         await loadState();
       } catch (error) {
         console.error("❌ Error adding to seen lists:", error);
       }
     },
-    [user, supabase, loadState, state]
+    [user, supabase, loadState]  // no 'state' dependency — reads DB directly
   );
 
   // Add a favorite clue (for style learning)
