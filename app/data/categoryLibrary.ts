@@ -169,6 +169,58 @@ export const DEFAULT_LIBRARY: CategoryLibraryItem[] = [
       "Q: This Beatles song begins with 'Is this the real life? Is this just fantasy?' A: (Trick — it's Queen) Bohemian Rhapsody\nQ: This artist released the album '21' in 2011. A: Adele",
     createdAt: 0,
   },
+  {
+    id: "lib-emoji-dash",
+    name: "EMOJI DASH",
+    promptTemplate:
+      "Generate Jeopardy clues where the CLUE is a sequence of 3–5 emojis that visually represent a well-known movie title, song title, TV show, book, celebrity name, brand, phrase, or idiom. The ANSWER is what the emojis spell out. Use creative emoji combinations that capture the essence — not just literal translation. Target 7/10 difficulty: $200 = recognizable pop culture with obvious emoji mapping, $1000 = multi-word phrases or idioms where the emoji logic is tricky. Do NOT include text explanations in the clue — only the emoji sequence itself. Make sure every answer is unambiguous and widely recognizable.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = single-word or obvious two-word answers (🦁👑 = The Lion King), $1000 = idioms, multi-word phrases, or clever lateral thinking (🎸🦇💀 = Death by Rock and Roll).",
+    answerFormatGuidance:
+      "The CLUE must be ONLY emojis — no text. The answer is the title, name, or phrase the emojis represent.",
+    examples:
+      "Q: 🕷️🧑 A: Spider-Man\nQ: 🌊🏄🏻🎵 A: Surfin' USA\nQ: ❄️👸🏔️ A: Frozen\nQ: 🐟🔍 A: Finding Nemo\nQ: 💰🤫🔫 A: Money Talks",
+    createdAt: 0,
+  },
+  {
+    id: "lib-finish-the-lyric",
+    name: "FINISH THE LYRIC",
+    promptTemplate:
+      "Generate Jeopardy clues where the clue is a well-known song lyric with the LAST word or phrase blanked out as '___'. The ANSWER is the missing word or phrase. Pull from iconic, widely-known songs spanning pop, hip-hop, rock, country, R&B, and classics from the 1970s to present. Target 7/10 difficulty — go beyond the most overplayed radio hits. Include hit songs players have heard but may not know every word. The lyric shown must be uniquely identifiable to that one song. Never use lyrics that could match multiple songs.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = chorus lines from mega-hits where most people know the words, $1000 = second verse, bridge, or pre-chorus lines that casual listeners might miss.",
+    answerFormatGuidance:
+      "The answer is the exact word or short phrase that completes the lyric. Keep it to 1–5 words.",
+    examples:
+      "Q: 'Is this the real life? Is this just ___?' A: Fantasy\nQ: 'I got 99 problems but a ___ ain't one.' A: Bitch\nQ: 'We are never ever ever getting back ___.' A: Together\nQ: 'Sweet dreams are made of ___, who am I to disagree?' A: This",
+    createdAt: 0,
+  },
+  {
+    id: "lib-slogans",
+    name: "SLOGANS",
+    promptTemplate:
+      "Generate Jeopardy clues where the clue is a well-known advertising slogan or brand tagline, and the ANSWER is the brand or company it belongs to. Include iconic slogans from fast food, beverages, tech companies, athletic brands, cars, retail, and consumer products. Target 7/10 difficulty — go beyond 'Just Do It.' Include slogans from the 1980s–present that people have heard but might not immediately pin to a brand. Never use a slogan that could belong to more than one brand.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = iconic slogans everyone knows but may not consciously associate with the brand, $1000 = retired or regional slogans that brand loyalists would remember.",
+    answerFormatGuidance:
+      "The answer is the brand name — company or product name only. Keep it concise.",
+    examples:
+      "Q: 'Have it your way.' A: Burger King\nQ: 'Think different.' A: Apple\nQ: 'Because you're worth it.' A: L'Oréal\nQ: 'Betcha can't eat just one.' A: Lay's\nQ: 'The happiest place on Earth.' A: Disneyland",
+    createdAt: 0,
+  },
+  {
+    id: "lib-tv-shows",
+    name: "TV SHOWS",
+    promptTemplate:
+      "Generate trivia questions about television: iconic shows, episode plots, character names, catchphrases, cast members, showrunners, spinoffs, network history, ratings records, and behind-the-scenes facts. Span sitcoms, dramas, reality TV, and streaming originals from the 1970s to present. Target 7/10 difficulty — go beyond 'who played Ross on Friends?' Include specific episode titles, guest stars, writers, and surprising show connections.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = well-known shows with a tricky angle, $1000 = specific episode facts, minor characters, or deep production trivia.",
+    answerFormatGuidance:
+      "Answers should be show titles, character names, or cast/crew names.",
+    examples:
+      "Q: This HBO drama series features a family fighting over control of a media empire. A: Succession\nQ: This was the first reality show to feature contestants voting each other off an island. A: Survivor",
+    createdAt: 0,
+  },
 ];
 
 const LIB_KEY = "triviaMasters.categories.v1";
@@ -193,7 +245,11 @@ export function loadCategories(): CategoryLibraryItem[] {
     const stored = localStorage.getItem(LIB_KEY);
     if (!stored) return DEFAULT_LIBRARY;
     const parsed = JSON.parse(stored) as Record<string, unknown>[];
-    return parsed.map(migrateItem);
+    const custom = parsed.map(migrateItem);
+    // Always include all defaults; append any user-created items not in the default set
+    const defaultIds = new Set(DEFAULT_LIBRARY.map((d) => d.id));
+    const userAdded = custom.filter((c) => !defaultIds.has(c.id));
+    return [...DEFAULT_LIBRARY, ...userAdded];
   } catch {
     return DEFAULT_LIBRARY;
   }
