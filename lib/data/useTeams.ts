@@ -101,8 +101,9 @@ export function useTeams() {
 
           if (error) throw error;
         }
-      } catch (error) {
-        console.error("Error saving teams:", error);
+      } catch (error: unknown) {
+        const e = error as { message?: string; code?: string; details?: string; hint?: string };
+        console.error("Error saving teams:", e?.message, "| code:", e?.code, "| details:", e?.details, "| hint:", e?.hint, e);
       }
     },
     [user, supabase]
