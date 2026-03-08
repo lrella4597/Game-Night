@@ -31,9 +31,23 @@ export function useRealtimeChannel({
 }: UseRealtimeChannelOptions) {
   const [connected, setConnected] = useState(false);
   const [presenceState, setPresenceState] = useState<PresenceState>({});
+  // Incrementing this forces the channel effect to re-run (reconnect)
+  const [reconnectKey, setReconnectKey] = useState(0);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const listenersRef = useRef<Map<string, Set<(payload: unknown) => void>>>(new Map());
   const supabase = createClient();
+
+  // On iOS Safari the WebSocket dies when the user switches apps.
+  // Reconnect automatically when the tab/page comes back into view.
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        setReconnectKey((k) => k + 1);
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
 
   useEffect(() => {
     if (!sessionId || !userId) return;
@@ -77,7 +91,7 @@ export function useRealtimeChannel({
       channelRef.current = null;
       setConnected(false);
     };
-  }, [sessionId, userId, userName, isHost, supabase]);
+  }, [sessionId, userId, userName, isHost, supabase, reconnectKey]);
 
   const broadcast = useCallback((event: string, payload: unknown) => {
     if (channelRef.current) {

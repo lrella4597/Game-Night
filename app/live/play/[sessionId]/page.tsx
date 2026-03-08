@@ -398,8 +398,14 @@ export default function PlayerGamePage() {
 
       {/* Reconnecting banner */}
       {reconnecting && (
-        <div className="bg-yellow-500 text-black text-center text-sm font-semibold py-2 px-4">
-          Reconnecting...
+        <div className="bg-yellow-500 text-black px-4 py-3 flex flex-col items-center gap-2">
+          <p className="text-sm font-semibold">Connection lost — trying to reconnect...</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-1.5 rounded-lg bg-black/20 hover:bg-black/30 text-xs font-bold transition-all"
+          >
+            Tap here to rejoin now
+          </button>
         </div>
       )}
 

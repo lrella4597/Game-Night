@@ -67,6 +67,7 @@ export default function HostPage() {
   const [boardControllerId, setBoardControllerId] = useState<string | null>(null);
   const [ddWager, setDdWager] = useState<number | null>(null);
   const [showCompanionQR, setShowCompanionQR] = useState(false);
+  const [showPlayerJoin, setShowPlayerJoin] = useState(false);
 
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
@@ -836,6 +837,12 @@ export default function HostPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
+        <button
+          onClick={() => setShowPlayerJoin(true)}
+          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all"
+        >
+          Invite Players
+        </button>
         {session.hostCompanionToken && (
           <button
             onClick={() => setShowCompanionQR(true)}
@@ -847,6 +854,52 @@ export default function HostPage() {
         {jeopardyHostHelp}
       </div>
       <LiveSoundControls />
+
+      {/* Player Join Modal */}
+      {showPlayerJoin && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          onClick={() => setShowPlayerJoin(false)}
+        >
+          <div
+            className="bg-[#060CE9] rounded-2xl p-8 max-w-sm w-full mx-4 flex flex-col items-center gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-[#FFD700]">Join the Game</h3>
+            <p className="text-blue-200 text-sm text-center">
+              Scan the QR code or enter the code below to join (or rejoin) this game.
+            </p>
+            <div className="bg-white p-4 rounded-xl">
+              <QRCodeSVG
+                value={`${typeof window !== "undefined" ? window.location.origin : ""}/live/play/${sessionId}`}
+                size={200}
+                bgColor="#ffffff"
+                fgColor="#060CE9"
+                level="M"
+              />
+            </div>
+            <div className="bg-[#FFD700]/10 border border-[#FFD700]/40 rounded-xl px-6 py-3 text-center">
+              <p className="text-[#FFD700] text-xs uppercase tracking-wider mb-1">Join Code</p>
+              <p className="text-[#FFD700] text-4xl font-extrabold tracking-widest">{session.joinCode}</p>
+            </div>
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/live/play/${sessionId}`;
+                navigator.clipboard.writeText(url).catch(() => {});
+              }}
+              className="text-blue-300/70 text-[10px] text-center hover:text-blue-200 transition-colors cursor-pointer underline underline-offset-2"
+            >
+              Copy join link
+            </button>
+            <button
+              onClick={() => setShowPlayerJoin(false)}
+              className="px-6 py-2 rounded-lg font-semibold text-sm bg-white/10 hover:bg-white/20 text-white transition-all"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Companion QR Modal */}
       {showCompanionQR && session.hostCompanionToken && (
@@ -1137,6 +1190,32 @@ export default function HostPage() {
           </div>
         )}
       </div>
+
+      {/* Always-visible join strip — players can scan/type to rejoin at any time */}
+      {!["game_over"].includes(phase) && (
+        <div
+          className="w-full bg-black/60 border-t border-white/5 px-4 py-1.5 flex items-center justify-between gap-4 cursor-pointer hover:bg-black/70 transition-colors"
+          onClick={() => setShowPlayerJoin(true)}
+          title="Click to show full QR code"
+        >
+          <div className="flex items-center gap-3">
+            <div className="bg-white p-1 rounded">
+              <QRCodeSVG
+                value={`${typeof window !== "undefined" ? window.location.origin : ""}/live/play/${sessionId}`}
+                size={36}
+                bgColor="#ffffff"
+                fgColor="#060CE9"
+                level="L"
+              />
+            </div>
+            <div>
+              <p className="text-white/40 text-[9px] uppercase tracking-wider leading-none">Join code</p>
+              <p className="text-[#FFD700] text-lg font-extrabold tracking-widest leading-tight">{session.joinCode}</p>
+            </div>
+          </div>
+          <p className="text-white/30 text-[10px] hidden sm:block">Tap to enlarge</p>
+        </div>
+      )}
 
       {/* Scoreboard (visible during regular gameplay, hidden during final reveal and game over) */}
       {!["game_over", "final_reveal", "final_locked"].includes(phase) && (
