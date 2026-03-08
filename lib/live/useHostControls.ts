@@ -88,7 +88,7 @@ export function useHostControls({ sessionId, broadcast }: UseHostControlsOptions
   }, [updateGameState, broadcast]);
 
   const judgeAnswer = useCallback(
-    async (playerId: string, correct: boolean, value: number) => {
+    async (playerId: string, correct: boolean, value: number, currentBuzzerQueue: import("./types").BuzzerEntry[] = []) => {
       const delta = correct ? value : -value;
 
       // Update player score in DB
@@ -123,16 +123,39 @@ export function useHostControls({ sessionId, broadcast }: UseHostControlsOptions
         });
         broadcast(HOST_EVENTS.PHASE_CHANGE, { phase: "board_select" });
       } else {
-        // Wrong answer → buzzer stays open for others (or back to board if no one left)
-        await updateGameState({
-          phase: "buzzer_open",
-          currentAnswererId: null,
-          lastAction: `incorrect:${playerId}`,
-        });
-        broadcast(HOST_EVENTS.PHASE_CHANGE, { phase: "buzzer_open" });
+        // Wrong answer — remove this player from the queue and auto-select the next one
+        const remainingQueue = currentBuzzerQueue.filter((e) => e.playerId !== playerId);
+        if (remainingQueue.length > 0) {
+          // Someone else already buzzed — show them next
+          const next = remainingQueue[0];
+          await updateGameState({
+            phase: "answer_check",
+            currentAnswererId: next.playerId,
+            buzzerQueue: remainingQueue,
+            lastAction: `incorrect:${playerId}`,
+          });
+          broadcast(HOST_EVENTS.PHASE_CHANGE, { phase: "answer_check" });
+        } else {
+          // No one else in queue — re-open buzzer for new buzzes
+          await updateGameState({
+            phase: "buzzer_open",
+            currentAnswererId: null,
+            buzzerQueue: [],
+            lastAction: `incorrect:${playerId}`,
+          });
+          broadcast(HOST_EVENTS.PHASE_CHANGE, { phase: "buzzer_open" });
+        }
       }
     },
     [supabase, updateGameState, broadcast]
+  );
+
+  const adjustPlayerScore = useCallback(
+    async (playerId: string, newScore: number) => {
+      await supabase.from("live_players").update({ score: newScore }).eq("id", playerId);
+      broadcast(HOST_EVENTS.SCORE_UPDATE, { playerId, newScore, delta: 0 });
+    },
+    [supabase, broadcast]
   );
 
   const skipClue = useCallback(async () => {
@@ -349,6 +372,7 @@ export function useHostControls({ sessionId, broadcast }: UseHostControlsOptions
     openBuzzer,
     lockBuzzer,
     judgeAnswer,
+    adjustPlayerScore,
     skipClue,
     changePhase,
     endGame,

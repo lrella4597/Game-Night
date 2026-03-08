@@ -45,7 +45,8 @@ export default function HostCompanionPage() {
         if (res.ok) {
           setVerified(true);
         } else {
-          setError("Invalid or expired companion link. Please scan the QR code again.");
+          const body = await res.json().catch(() => ({}));
+          setError(body.error || "Invalid or expired companion link. Try copying the URL from the QR modal instead.");
         }
       } catch {
         setError("Failed to verify. Check your connection.");

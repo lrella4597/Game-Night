@@ -507,12 +507,23 @@ export default function HostPage() {
 
   function handleIncorrect() {
     if (!gameState?.currentAnswererId || !gameState.currentClueValue) return;
+    const wrongId = gameState.currentAnswererId;
+    const remainingQueue = gameState.buzzerQueue.filter((e) => e.playerId !== wrongId);
     playSound("incorrect");
-    hostControls.judgeAnswer(gameState.currentAnswererId, false, gameState.currentClueValue);
+    hostControls.judgeAnswer(wrongId, false, gameState.currentClueValue, gameState.buzzerQueue);
     fetchPlayers();
-    setGameState((prev) =>
-      prev ? { ...prev, phase: "buzzer_open" as GamePhase, currentAnswererId: null } : prev
-    );
+    if (remainingQueue.length > 0) {
+      // Auto-advance to next player who already buzzed
+      const next = remainingQueue[0];
+      playSoundRef.current("buzz-in");
+      setGameState((prev) =>
+        prev ? { ...prev, buzzerQueue: remainingQueue, currentAnswererId: next.playerId, phase: "answer_check" as GamePhase } : prev
+      );
+    } else {
+      setGameState((prev) =>
+        prev ? { ...prev, buzzerQueue: [], currentAnswererId: null, phase: "buzzer_open" as GamePhase } : prev
+      );
+    }
   }
 
   function handleSkip() {
@@ -854,9 +865,15 @@ export default function HostPage() {
                 level="M"
               />
             </div>
-            <p className="text-blue-300/60 text-[10px] text-center break-all">
-              {typeof window !== "undefined" ? window.location.origin : ""}/live/host-companion/{sessionId}
-            </p>
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/live/host-companion/${sessionId}?token=${session.hostCompanionToken}`;
+                navigator.clipboard.writeText(url).catch(() => {});
+              }}
+              className="text-blue-300/70 text-[10px] text-center break-all hover:text-blue-200 transition-colors cursor-pointer underline underline-offset-2"
+            >
+              Copy link (if QR doesn&apos;t work)
+            </button>
             <button
               onClick={() => setShowCompanionQR(false)}
               className="px-6 py-2 rounded-lg font-semibold text-sm bg-white/10 hover:bg-white/20 text-white transition-all"
@@ -1117,7 +1134,14 @@ export default function HostPage() {
 
       {/* Scoreboard (visible during regular gameplay, hidden during final reveal and game over) */}
       {!["game_over", "final_reveal", "final_locked"].includes(phase) && (
-        <HostScoreboard players={players} currentAnswererId={gameState?.currentAnswererId} />
+        <HostScoreboard
+          players={players}
+          currentAnswererId={gameState?.currentAnswererId}
+          onAdjustScore={async (playerId, newScore) => {
+            await hostControls.adjustPlayerScore(playerId, newScore);
+            fetchPlayers();
+          }}
+        />
       )}
     </div>
   );
