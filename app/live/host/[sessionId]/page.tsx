@@ -161,7 +161,14 @@ export default function HostPage() {
         return;
       }
 
-      setSession(toSession(sessionRow as LiveSessionRow));
+      const mappedSession = toSession(sessionRow as LiveSessionRow);
+      setSession(mappedSession);
+
+      // Restore finalData from DB so the clue renders correctly after a page reload
+      if (mappedSession.finalJeopardy) {
+        setFinalData(mappedSession.finalJeopardy);
+      }
+
       await fetchPlayers();
       await fetchGameState();
       setLoading(false);
