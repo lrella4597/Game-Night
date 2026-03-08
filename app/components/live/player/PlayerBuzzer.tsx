@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 interface PlayerBuzzerProps {
   buzzerOpen: boolean;
   hasBuzzed: boolean;
@@ -9,11 +7,8 @@ interface PlayerBuzzerProps {
 }
 
 export default function PlayerBuzzer({ buzzerOpen, hasBuzzed, onBuzz }: PlayerBuzzerProps) {
-  const [pressed, setPressed] = useState(false);
-
   function handleBuzz() {
     if (!buzzerOpen || hasBuzzed) return;
-    setPressed(true);
     onBuzz();
     // Haptic feedback
     if (navigator.vibrate) {
@@ -31,13 +26,13 @@ export default function PlayerBuzzer({ buzzerOpen, hasBuzzed, onBuzz }: PlayerBu
           ${
             !buzzerOpen
               ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-              : hasBuzzed || pressed
+              : hasBuzzed
               ? "bg-yellow-500 text-yellow-900 scale-95"
               : "bg-red-500 text-white hover:bg-red-400 active:scale-90 active:bg-red-600 cursor-pointer"
           }
         `}
       >
-        {hasBuzzed || pressed ? "Buzzed!" : buzzerOpen ? "BUZZ" : "Wait..."}
+        {hasBuzzed ? "Buzzed!" : buzzerOpen ? "BUZZ" : "Wait..."}
       </button>
 
       {!buzzerOpen && (

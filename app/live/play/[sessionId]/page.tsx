@@ -177,7 +177,7 @@ export default function PlayerGamePage() {
       const data = payload as { phase: GamePhase };
       setPhase(data.phase);
       // Reset buzzer state on new clue/phase
-      if (data.phase === "clue_display" || data.phase === "board_select") {
+      if (data.phase === "clue_display" || data.phase === "board_select" || data.phase === "buzzer_open") {
         setHasBuzzed(false);
         setScoreDelta(null);
         setDdPlayerId(null);
