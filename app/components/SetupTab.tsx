@@ -219,7 +219,10 @@ export default function SetupTab() {
                         onChange={(e) =>
                           setTeamNameDrafts((prev) => ({ ...prev, [team.id]: e.target.value }))
                         }
-                        onBlur={(e) => updateTeam(team.id, { name: (teamNameDrafts[team.id] ?? team.name).trim() || team.name })}
+                        onBlur={() => {
+                          const name = (teamNameDrafts[team.id] ?? team.name).trim() || team.name;
+                          saveTeams(teams.map((t) => (t.id === team.id ? { ...t, name } : t)), true);
+                        }}
                         onKeyDown={(e) => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
                         maxLength={30}
                         className="w-full rounded-lg px-3 py-2 text-slate-900 text-sm focus:outline-none bg-slate-50 border border-slate-200"
