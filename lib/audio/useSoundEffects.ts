@@ -22,6 +22,7 @@ export type SoundEffect =
 
 interface UseSoundEffectsReturn {
   play: (sound: SoundEffect) => void;
+  playBuzz: (playerIndex: number) => void;
   enabled: boolean;
   setEnabled: (enabled: boolean) => void;
   volume: number;
@@ -113,13 +114,43 @@ export function useSoundEffects(): UseSoundEffectsReturn {
       },
 
       incorrect: () => {
-        oscillator.frequency.setValueAtTime(200, now);
-        oscillator.frequency.linearRampToValueAtTime(100, now + 0.3);
-        gainNode.gain.setValueAtTime(volume * 0.4, now);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        // Fart noise: filtered noise burst + low sawtooth rumble
+        const duration = 0.65;
+
+        // Noise layer — fill a buffer with white noise, then lowpass filter it down
+        const bufferSize = Math.ceil(ctx.sampleRate * duration);
+        const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const noiseSource = ctx.createBufferSource();
+        noiseSource.buffer = noiseBuffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(500, now);
+        filter.frequency.exponentialRampToValueAtTime(60, now + duration);
+        filter.Q.value = 12;
+
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.01, now);
+        noiseGain.gain.linearRampToValueAtTime(volume * 0.8, now + 0.04);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+        noiseSource.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        noiseSource.start(now);
+        noiseSource.stop(now + duration);
+
+        // Low sawtooth rumble underneath
         oscillator.type = "sawtooth";
+        oscillator.frequency.setValueAtTime(80, now);
+        oscillator.frequency.linearRampToValueAtTime(35, now + duration);
+        gainNode.gain.setValueAtTime(volume * 0.35, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration);
         oscillator.start(now);
-        oscillator.stop(now + 0.3);
+        oscillator.stop(now + duration);
       },
 
       reveal: () => {
@@ -292,8 +323,63 @@ export function useSoundEffects(): UseSoundEffectsReturn {
     sounds[sound]();
   };
 
+  // Unique buzz sound per player (cycles through 8 distinct tones)
+  const playBuzz = (playerIndex: number) => {
+    if (!enabled || !audioContextRef.current) return;
+    const ctx = audioContextRef.current;
+    const now = ctx.currentTime;
+
+    function osc(type: OscillatorType, freq: number[], times: number[], gainVals: number[], endTime: number) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type;
+      o.connect(g);
+      g.connect(ctx.destination);
+      freq.forEach((f, i) => o.frequency.setValueAtTime(f, now + times[i]));
+      gainVals.forEach((v, i) => {
+        if (i < gainVals.length - 1) g.gain.setValueAtTime(v * volume, now + times[i]);
+        else g.gain.exponentialRampToValueAtTime(0.01, now + endTime);
+      });
+      o.start(now);
+      o.stop(now + endTime);
+    }
+
+    const buzzes = [
+      // 0 – classic sawtooth buzz
+      () => osc("sawtooth", [150, 180, 140], [0, 0.05, 0.1], [0.45, 0.01], 0.18),
+      // 1 – ascending ping
+      () => osc("sine", [440, 880], [0, 0], [0.4, 0.01], 0.2),
+      // 2 – two-note chime C5→G5
+      () => osc("triangle", [523, 784], [0, 0.1], [0.4, 0.01], 0.28),
+      // 3 – square boop
+      () => osc("square", [220, 220], [0, 0], [0.35, 0.01], 0.18),
+      // 4 – high descending chirp
+      () => osc("sine", [1320, 660], [0, 0], [0.35, 0.01], 0.2),
+      // 5 – double beep (two separate oscillators)
+      () => {
+        [0, 0.11].forEach((offset) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = "sine";
+          o.connect(g); g.connect(ctx.destination);
+          o.frequency.setValueAtTime(660, now + offset);
+          g.gain.setValueAtTime(volume * 0.38, now + offset);
+          g.gain.exponentialRampToValueAtTime(0.01, now + offset + 0.08);
+          o.start(now + offset); o.stop(now + offset + 0.08);
+        });
+      },
+      // 6 – slide up
+      () => osc("triangle", [200, 800], [0, 0], [0.35, 0.01], 0.22),
+      // 7 – quick arp C4→G4→C5
+      () => osc("triangle", [262, 392, 523], [0, 0.07, 0.14], [0.4, 0.4, 0.01], 0.28),
+    ];
+
+    (buzzes[playerIndex % buzzes.length])();
+  };
+
   return {
     play,
+    playBuzz,
     enabled,
     setEnabled,
     volume,
