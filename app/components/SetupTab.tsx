@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTeams, TEAM_COLORS, defaultTeam, type Team } from "@/lib/data/useTeams";
 import { useGameSettings } from "@/lib/data/useGameSettings";
 import { useBoards } from "@/lib/data/useBoards";
@@ -14,14 +14,23 @@ export default function SetupTab() {
   const { currentBoard, saveCurrentBoard, loading: boardsLoading } = useBoards();
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const [newPlayerName, setNewPlayerName] = useState<Record<string, string>>({});
+  // Local draft state for team names — avoids controlled-input issues during rapid typing
+  const [teamNameDrafts, setTeamNameDrafts] = useState<Record<string, string>>({});
+
+  // Keep drafts in sync when teams load or change from outside
+  useEffect(() => {
+    setTeamNameDrafts((prev) => {
+      const next = { ...prev };
+      for (const t of teams) {
+        if (!(t.id in next)) next[t.id] = t.name;
+      }
+      return next;
+    });
+  }, [teams]);
   const [pendingMode, setPendingMode] = useState<"manual" | "ai" | null>(null);
   const [modeSaved, setModeSaved] = useState(false);
 
   // ── Persist helpers ──────────────────────────────────────────────────────────
-
-  async function persistTeams(updated: Team[]) {
-    await saveTeams(updated);
-  }
 
   async function persistSettings(updated: GameSettings) {
     await saveSettings(updated);
@@ -29,20 +38,21 @@ export default function SetupTab() {
 
   // ── Teams ────────────────────────────────────────────────────────────────────
 
-  function handleAddTeam() {
+  async function handleAddTeam() {
     const next = defaultTeam(teams.length);
-    persistTeams([...teams, next]);
+    await saveTeams([...teams, next], true);
     setExpandedTeam(next.id);
   }
 
-  function handleRemoveTeam(id: string) {
+  async function handleRemoveTeam(id: string) {
     if (!window.confirm("Remove this team?")) return;
-    persistTeams(teams.filter((t) => t.id !== id));
+    await saveTeams(teams.filter((t) => t.id !== id), true);
     if (expandedTeam === id) setExpandedTeam(null);
   }
 
   function updateTeam(id: string, patch: Partial<Team>) {
-    persistTeams(teams.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    // Debounced save — good for typing, color picks, etc.
+    saveTeams(teams.map((t) => (t.id === id ? { ...t, ...patch } : t)));
   }
 
   // ── Players ──────────────────────────────────────────────────────────────────
@@ -66,18 +76,19 @@ export default function SetupTab() {
 
   // ── Settings ─────────────────────────────────────────────────────────────────
 
-  function handleResetScores() {
+  async function handleResetScores() {
     if (!window.confirm("Reset all team scores to 0?")) return;
-    persistTeams(teams.map((t) => ({ ...t, score: 0 })));
+    await saveTeams(teams.map((t) => ({ ...t, score: 0 })), true);
   }
 
-  function handleResetPowerUps() {
+  async function handleResetPowerUps() {
     if (!window.confirm("Reset all power-ups to unused?")) return;
-    persistTeams(
+    await saveTeams(
       teams.map((t) => ({
         ...t,
         powerUps: { doubleDown: false, doubleDip: false, phoneAFriend: false },
-      }))
+      })),
+      true
     );
   }
 
@@ -204,8 +215,11 @@ export default function SetupTab() {
                       </label>
                       <input
                         type="text"
-                        value={team.name}
-                        onChange={(e) => updateTeam(team.id, { name: e.target.value })}
+                        value={teamNameDrafts[team.id] ?? team.name}
+                        onChange={(e) =>
+                          setTeamNameDrafts((prev) => ({ ...prev, [team.id]: e.target.value }))
+                        }
+                        onBlur={() => updateTeam(team.id, { name: (teamNameDrafts[team.id] ?? team.name).trim() || team.name })}
                         maxLength={30}
                         className="w-full rounded-lg px-3 py-2 text-slate-900 text-sm focus:outline-none bg-slate-50 border border-slate-200"
                       />
