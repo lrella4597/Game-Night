@@ -17,13 +17,13 @@ export const DEFAULT_LIBRARY: CategoryLibraryItem[] = [
     id: "lib-name-that-year",
     name: "NAME THAT YEAR",
     promptTemplate:
-      "Generate Jeopardy clues where each clue lists 3 major events from the SAME year, spanning different categories: sports championships, #1 hit songs/albums, blockbuster movies, political events, world news, tech launches, celebrity moments, etc. The ANSWER is always the year. Target difficulty 7/10 — clues should stump casual players but be gettable for trivia buffs. Vary the decades (1950s–2020s). Each event should be independently verifiable and well-known in its own domain. Never repeat a year across clues.",
+      "Generate Jeopardy clues where each clue lists exactly 4 major events that ALL happened in the SAME calendar year. The 4 events MUST span 4 different domains from this list: (1) Sports — championships, records, iconic moments; (2) Music — #1 albums, Grammy wins, iconic songs released; (3) Movies/TV — box office hits, award-winning films, iconic shows premiering; (4) Technology — product launches, inventions, tech milestones (e.g. iPhone launch, first tweet, Google founded); (5) World/Political Events — elections, wars, treaties, natural disasters; (6) Pop Culture — viral moments, celebrity events, cultural milestones; (7) Science/Space — discoveries, missions, medical breakthroughs. Each clue must use 4 DIFFERENT domains. Format: list the 4 events separated by semicolons. The ANSWER is always the year. Target 7/10 difficulty — clues should stump casual players but be gettable for trivia buffs. Vary the decades (1960s–2020s). Every event must be independently verifiable and widely recognizable. Never repeat a year across clues in the same set.",
     difficultyGuidance:
-      "Target 7/10 difficulty. $200 = well-known years with obvious mega-events, $1000 = years that require connecting niche cross-category events from different domains.",
+      "Target 7/10 difficulty. $200 = years with mega-events most adults lived through or know well; $1000 = years where the events are real but require connecting dots across multiple domains that most people wouldn't link together.",
     answerFormatGuidance:
       "The answer must ALWAYS be a four-digit year. Nothing else.",
     examples:
-      "Q: The Berlin Wall fell, Taylor Swift was born, and Tim Burton's Batman hit theaters. A: 1989\nQ: Obama was inaugurated, Avatar became the highest-grossing film, and Michael Jackson passed away. A: 2009\nQ: The Red Sox broke the Curse, Facebook launched, and Usher's 'Yeah!' topped the charts. A: 2004",
+      "Q: The Chicago Bulls won their 6th NBA championship; Titanic became the highest-grossing film ever; Google was founded in a garage; 'My Heart Will Go On' by Celine Dion topped the charts. A: 1998\nQ: The first iPhone was unveiled by Steve Jobs; the New York Giants upset the undefeated Patriots in the Super Bowl; Kanye West released 'Graduation'; Barry Bonds hit his record-breaking 756th home run. A: 2007\nQ: The Berlin Wall fell; Tim Burton's Batman dominated the box office; Taylor Swift was born; Nintendo released the Game Boy. A: 1989",
     createdAt: 0,
   },
   {
@@ -219,6 +219,71 @@ export const DEFAULT_LIBRARY: CategoryLibraryItem[] = [
       "Answers should be show titles, character names, or cast/crew names.",
     examples:
       "Q: This HBO drama series features a family fighting over control of a media empire. A: Succession\nQ: This was the first reality show to feature contestants voting each other off an island. A: Survivor",
+    createdAt: 0,
+  },
+  {
+    id: "lib-who-said-it",
+    name: "WHO SAID IT?",
+    promptTemplate:
+      "Generate Jeopardy clues where the clue is a famous real-world quote, and the ANSWER is the person who said it. Pull from politicians, athletes, entertainers, historical figures, scientists, business leaders, and cultural icons. The quote must be unambiguously attributable to one person. Target 7/10 difficulty — go beyond 'I have a dream' and 'Be the change.' Include memorable lines from speeches, interviews, press conferences, and public moments that people have heard but might not be able to place.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = iconic quotes most people recognize but might not pin to the speaker; $1000 = specific interview quotes, lesser-known speeches, or lines from historical figures outside the usual canon.",
+    answerFormatGuidance:
+      "The answer is the full name of the person who said it.",
+    examples:
+      "Q: 'I'm not a businessman, I'm a business, man.' A: Jay-Z\nQ: 'Float like a butterfly, sting like a bee.' A: Muhammad Ali\nQ: 'The only thing we have to fear is fear itself.' A: Franklin D. Roosevelt\nQ: 'That's one small step for man, one giant leap for mankind.' A: Neil Armstrong",
+    createdAt: 0,
+  },
+  {
+    id: "lib-famous-firsts",
+    name: "FAMOUS FIRSTS",
+    promptTemplate:
+      "Generate Jeopardy clues about record-breaking or historic 'firsts' in history, sports, science, pop culture, and technology. Each clue describes the achievement or the context, and the ANSWER is the person, country, team, or thing that did it first. Target 7/10 difficulty — go beyond 'first man on the moon.' Include firsts in sports records, technological milestones, entertainment history, medical breakthroughs, and surprising cultural moments.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = firsts most educated adults would know with a moment's thought; $1000 = obscure firsts in niche fields, specific 'first in a sport' records, or surprisingly late historical milestones.",
+    answerFormatGuidance:
+      "The answer is the name of the person, team, country, product, or event that was first.",
+    examples:
+      "Q: This country was the first to give women the right to vote nationally, in 1893. A: New Zealand\nQ: She was the first woman to win a Nobel Prize. A: Marie Curie\nQ: This streaming service released the first TV show to win the Emmy for Outstanding Drama. A: Netflix (House of Cards)\nQ: He was the first athlete to run a sub-4-minute mile. A: Roger Bannister",
+    createdAt: 0,
+  },
+  {
+    id: "lib-two-truths-lie",
+    name: "TWO TRUTHS & A LIE",
+    promptTemplate:
+      "Generate Jeopardy clues in the Two Truths & A Lie format: present 3 statements labeled A, B, and C about a specific person, place, or topic. Exactly TWO statements are true and ONE is a cleverly believable lie. The ANSWER is the letter of the lie (A, B, or C) followed by the correct version. The lie should be plausible — not obviously wrong, but subtly off. All three statements should be about the same subject. Target 7/10 difficulty — the lie should fool players who half-know the subject.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = the lie is a small factual twist on a well-known truth; $1000 = all three statements sound equally plausible and require deep knowledge to sort out.",
+    answerFormatGuidance:
+      "Format: 'C — [the corrected true statement]'. Always include which letter is the lie and what the truth actually is.",
+    examples:
+      "Q: About Michael Jordan — A: He was cut from his high school varsity team as a sophomore. B: He won 6 NBA championships, all with the Chicago Bulls. C: He retired three times during his career. A: C — He retired twice (not three times)\nQ: About the Eiffel Tower — A: It was built as a temporary structure for the 1889 World's Fair. B: It's the tallest structure in Paris. C: It was originally painted blue. A: C — It was originally painted red-brown",
+    createdAt: 0,
+  },
+  {
+    id: "lib-rhyme-time",
+    name: "RHYME TIME",
+    promptTemplate:
+      "Generate Jeopardy clues where the ANSWER is a two-word phrase in which both words rhyme (or near-rhyme). The clue is a definition or description of the rhyming phrase. The answers should be fun, clever, and widely understood. Examples of valid answers: 'Fat Cat', 'Super Trooper', 'Mellow Fellow', 'Double Trouble', 'Sad Dad', 'Legal Eagle', 'Big Wig'. Target 7/10 difficulty — the clue should make the answer feel satisfying when you get it but genuinely tricky to reach. Vary between funny/silly and clever/sophisticated.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = obvious rhyming pairs with clear clues ('An overweight feline' = Fat Cat); $1000 = abstract or multi-syllable rhyming pairs that require lateral thinking.",
+    answerFormatGuidance:
+      "The answer must be a two-word rhyming (or near-rhyming) phrase. Both words should be common English words.",
+    examples:
+      "Q: An overweight feline. A: Fat Cat\nQ: A skilled lawyer. A: Legal Eagle\nQ: An unhappy father. A: Sad Dad\nQ: A cool swimming area. A: Groovy Pool\nQ: A shady criminal organization. A: Crime Slime",
+    createdAt: 0,
+  },
+  {
+    id: "lib-before-or-after",
+    name: "BEFORE OR AFTER",
+    promptTemplate:
+      "Generate Jeopardy clues in the 'Before or After' format: give players two notable historical events and ask 'which came first?' OR give one event and ask 'was this before or after [another event]?' The ANSWER is whichever event came first, plus optionally the year. Mix categories: tech milestones, sports records, historical events, pop culture moments, scientific discoveries. Target 7/10 difficulty — the two events should feel close in time or be in domains where people lose track of chronology. Never use events more than 1 year apart in the easy tier; the hard tier should have events that feel contemporary but have a surprising order.",
+    difficultyGuidance:
+      "Target 7/10 difficulty. $200 = events from different decades that people should know; $1000 = events within a few years of each other where the order surprises most people.",
+    answerFormatGuidance:
+      "The answer is the name of the earlier event or invention, ideally with its year.",
+    examples:
+      "Q: Which came first — the invention of the microwave oven or the first McDonald's franchise? A: The microwave oven (1945) — McDonald's franchised in 1953\nQ: Which happened first — YouTube launching or Facebook opening to the public? A: Facebook (2004) — YouTube launched in 2005\nQ: Which came first — the moon landing or Woodstock? A: The moon landing (July 1969) — Woodstock was August 1969",
     createdAt: 0,
   },
 ];
