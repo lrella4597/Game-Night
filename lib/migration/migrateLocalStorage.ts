@@ -93,12 +93,11 @@ export async function migrateLocalStorage(userId: string): Promise<MigrationResu
         for (const team of teams) {
           await supabase.from("teams").insert({
             user_id: userId,
-            team_id: team.id,
             name: team.name,
-            color: team.color,
-            score: team.score,
-            players: team.players,
-            power_ups: team.powerUps,
+            color: team.color || "#3b82f6",
+            score: team.score || 0,
+            players: team.players || [],
+            power_ups: team.powerUps || { doubleDown: false, doubleDip: false, phoneAFriend: false },
           });
           result.itemsMigrated.teams++;
         }
