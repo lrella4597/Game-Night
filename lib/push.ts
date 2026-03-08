@@ -1,11 +1,16 @@
 import webpush from "web-push";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-webpush.setVapidDetails(
-  "mailto:admin@gamenightapp.netlify.app",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+let vapidInitialized = false;
+function ensureVapid() {
+  if (vapidInitialized) return;
+  webpush.setVapidDetails(
+    "mailto:admin@gamenightapp.netlify.app",
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
+  );
+  vapidInitialized = true;
+}
 
 export interface PushSubscriptionRecord {
   endpoint: string;
@@ -24,6 +29,7 @@ export async function sendPush(
   payload: PushPayload
 ): Promise<void> {
   try {
+    ensureVapid();
     await webpush.sendNotification(
       {
         endpoint: subscription.endpoint,
