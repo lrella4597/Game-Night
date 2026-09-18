@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { buildClueGenerationPrompt, pointValueToDifficulty } from "@/lib/prompts/clueGenerationPrompt";
 import type { GenerationState } from "@/lib/data/useGenerationState";
+import { isDuplicateAnswer, REFRESH_TEMPERATURE } from "@/lib/generation/questionRefresh";
 
 export async function POST(req: NextRequest) {
   try {
@@ -82,56 +83,63 @@ export async function POST(req: NextRequest) {
       state,
     });
 
-    const userMessage = `Generate ONE fresh Jeopardy clue for "${categoryName}" at difficulty ${difficulty}/10.`;
+    const baseUserMessage = `Generate ONE fresh Jeopardy clue for "${categoryName}" at difficulty ${difficulty}/10.`;
+    const maxAttempts = 3;
+    let question = "";
+    let answer = "";
+    let topicTags: string[] = [];
+    let qualityCheck: unknown;
+    let lastDuplicateAnswer = "";
 
-    let msg;
-    try {
-      msg = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1000,
-        temperature: 0.5,
-        system: systemPrompt,
-        messages: [
-          {
-            role: "user",
-            content: userMessage,
-          },
-        ],
-      });
-      console.log("✅ Question regeneration API responded");
-    } catch (apiError: unknown) {
-      console.error("❌ Question regeneration API call failed:", apiError);
-      throw new Error(`API call failed: ${apiError instanceof Error ? apiError.message : String(apiError)}`);
-    }
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const userMessage = attempt === 0
+        ? baseUserMessage
+        : `${baseUserMessage} Do not use the duplicate answer "${lastDuplicateAnswer}". Choose a completely different subject and answer.`;
 
-    const text = msg.content?.[0]?.type === "text" ? msg.content[0].text.trim() : "";
+      let msg;
+      try {
+        msg = await anthropic.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          temperature: Math.min(1, REFRESH_TEMPERATURE + attempt * 0.05),
+          system: systemPrompt,
+          messages: [{ role: "user", content: userMessage }],
+        });
+        console.log(`✅ Question regeneration API responded (attempt ${attempt + 1}/${maxAttempts})`);
+      } catch (apiError: unknown) {
+        console.error("❌ Question regeneration API call failed:", apiError);
+        throw new Error(`API call failed: ${apiError instanceof Error ? apiError.message : String(apiError)}`);
+      }
 
-    if (!text) {
-      throw new Error("No response from Claude API");
-    }
+      const text = msg.content?.[0]?.type === "text" ? msg.content[0].text.trim() : "";
+      if (!text) throw new Error("No response from Claude API");
 
-    // Strip markdown code fences and extract JSON
-    let cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/,"").trim();
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      cleaned = jsonMatch[0];
-    }
+      let cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/,"").trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) cleaned = jsonMatch[0];
 
-    let data;
-    try {
-      data = JSON.parse(cleaned);
-    } catch (parseError) {
-      console.error("❌ Question regeneration JSON parse failed. Raw text:", text);
-      throw new Error("Failed to parse question response");
-    }
+      let data;
+      try {
+        data = JSON.parse(cleaned);
+      } catch {
+        console.error("❌ Question regeneration JSON parse failed. Raw text:", text);
+        throw new Error("Failed to parse question response");
+      }
 
-    // Handle both old format {question, answer} and new format {clue, response}
-    const question = data.clue || data.question;
-    const answer = data.response || data.answer;
-    const topicTags = data.topic_tags || [];
+      question = data.clue || data.question;
+      answer = data.response || data.answer;
+      topicTags = data.topic_tags || [];
+      qualityCheck = data.quality_check;
 
-    if (!question || !answer) {
-      throw new Error("Invalid question response structure");
+      if (!question || !answer) throw new Error("Invalid question response structure");
+
+      if (!isDuplicateAnswer(answer, state.seen_answers)) break;
+
+      lastDuplicateAnswer = answer;
+      console.warn(`⚠️ Duplicate refresh answer "${answer}" (attempt ${attempt + 1}/${maxAttempts})`);
+      if (attempt === maxAttempts - 1) {
+        throw new Error(`Unable to generate a unique answer after ${maxAttempts} attempts`);
+      }
     }
 
     return NextResponse.json({
@@ -142,7 +150,7 @@ export async function POST(req: NextRequest) {
         provider: "claude",
         model: "claude-sonnet-4-6",
         difficulty,
-        qualityCheck: data.quality_check,
+        qualityCheck,
       }
     });
   } catch (err: unknown) {

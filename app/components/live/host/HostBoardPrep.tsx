@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useGenerationState } from "@/lib/data/useGenerationState";
+import { buildQuestionRefreshBody } from "@/lib/generation/questionRefresh";
 import { useCategoryLibrary } from "@/lib/data/useCategoryLibrary";
 import { DEFAULT_LIBRARY } from "@/app/data/categoryLibrary";
 import { assemblePrompt } from "@/app/lib/generatePrompt";
@@ -142,14 +143,14 @@ export default function HostBoardPrep({ board, djBoard, playerCount, onFinalize,
       const res = await fetch("/api/generate/question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(buildQuestionRefreshBody({
           categoryName: column.title,
           categoryPrompt: prompt,
           pointValue: question.value,
           generationState,
           currentClue: question.question,
           currentAnswer: question.answer,
-        }),
+        })),
       });
 
       if (!res.ok) throw new Error("Refresh failed");

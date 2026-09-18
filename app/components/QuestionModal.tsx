@@ -8,6 +8,7 @@ import { useFavorites } from "@/lib/data/useFavorites";
 import { useFactCheckCache, type FactCheckResult } from "@/lib/data/useFactCheckCache";
 import { usePlayerStats } from "@/lib/data/usePlayerStats";
 import { useGenerationState } from "@/lib/data/useGenerationState";
+import { buildQuestionRefreshBody } from "@/lib/generation/questionRefresh";
 import { pointValueToDifficulty } from "@/lib/prompts/clueGenerationPrompt";
 import { apiFetch, handleApiError } from "@/lib/utils/apiErrorHandler";
 import type { SoundEffect } from "@/lib/audio/useSoundEffects";
@@ -60,7 +61,7 @@ export default function QuestionModal({
   const { recordPlayerAnswer } = usePlayerStats();
   const { isFavorite, addFavorite, removeFavoriteByContent } = useFavorites();
   const { getCachedFactCheck, cacheFactCheck } = useFactCheckCache();
-  const { addFavorite: addFavoriteToGenState, addDislike, addToSeen } = useGenerationState();
+  const { state: generationState, addFavorite: addFavoriteToGenState, addDislike, addToSeen } = useGenerationState();
 
   // ── Display state ────────────────────────────────────────────────────────────
   const [answerRevealed, setAnswerRevealed] = useState(false);
@@ -277,13 +278,14 @@ export default function QuestionModal({
     try {
       const res = await apiFetch("/api/generate/question", {
         method: "POST",
-        body: JSON.stringify({
+        body: JSON.stringify(buildQuestionRefreshBody({
           categoryName: category.title,
           categoryPrompt: assembledPrompt,
           pointValue: question.value,
+          generationState,
           currentClue: displayQuestion,
           currentAnswer: displayAnswer,
-        }),
+        })),
       });
       const data: { question: string; answer: string; topicTags?: string[] } = await res.json();
 

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { Question } from "../data/boardData";
+import { useGenerationState } from "@/lib/data/useGenerationState";
+import { buildQuestionRefreshBody } from "@/lib/generation/questionRefresh";
 
 interface EditTileModalProps {
   question: Question;
@@ -24,6 +26,7 @@ export default function EditTileModal({
   onSave,
   onClose,
 }: EditTileModalProps) {
+  const { state: generationState, addToSeen } = useGenerationState();
   const [questionText, setQuestionText] = useState(question.question);
   const [answerText, setAnswerText] = useState(question.answer);
   const [value, setValue] = useState(question.value);
@@ -35,19 +38,30 @@ export default function EditTileModal({
     setRefreshing(true);
     setRefreshError(null);
     try {
+      await addToSeen({
+        answers: [answerText],
+        clues: [questionText],
+      });
+
       const res = await fetch("/api/generate/question", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(buildQuestionRefreshBody({
           categoryName: categoryTitle,
           categoryPrompt: assembledPrompt,
           pointValue: value,
+          generationState,
           currentClue: questionText,
           currentAnswer: answerText,
-        }),
+        })),
       });
       if (!res.ok) throw new Error("Request failed");
-      const data: { question: string; answer: string } = await res.json();
+      const data: { question: string; answer: string; topicTags?: string[] } = await res.json();
+      await addToSeen({
+        answers: [data.answer],
+        topics: data.topicTags || [],
+        clues: [data.question],
+      });
       setQuestionText(data.question);
       setAnswerText(data.answer);
     } catch {

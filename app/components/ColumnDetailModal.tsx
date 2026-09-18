@@ -5,6 +5,7 @@ import type { Category, Question } from "../data/boardData";
 import EditTileModal from "./EditTileModal";
 import { useGenerationState } from "@/lib/data/useGenerationState";
 import { useFavorites } from "@/lib/data/useFavorites";
+import { buildQuestionRefreshBody } from "@/lib/generation/questionRefresh";
 
 interface ColumnDetailModalProps {
   category: Category;
@@ -242,14 +243,14 @@ export default function ColumnDetailModal({
                                     const res = await fetch("/api/generate/question", {
                                       method: "POST",
                                       headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({
+                                      body: JSON.stringify(buildQuestionRefreshBody({
                                         categoryName: category.title,
                                         categoryPrompt: assembledPrompt,
                                         pointValue: question.value,
                                         generationState,
                                         currentClue: question.question,
                                         currentAnswer: question.answer,
-                                      }),
+                                      })),
                                     });
                                     const data = await res.json();
 
