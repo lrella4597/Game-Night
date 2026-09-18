@@ -21,6 +21,11 @@ import Toast from "./Toast";
 import type { ToastData } from "./Toast";
 import LoadingSpinner from "./LoadingSpinner";
 import { apiFetch } from "@/lib/utils/apiErrorHandler";
+import {
+  createAudienceSnapshot,
+  publishAudienceSnapshot,
+  refreshActiveAudienceQuestion,
+} from "@/lib/audience/triviaAudience";
 
 // ── Types for API responses ───────────────────────────────────────────────────
 
@@ -68,6 +73,19 @@ export default function GameBoard() {
     question: Question;
     category: Category;
   } | null>(null);
+
+  // Keep the audience window synchronized with display-safe gameplay data only.
+  useEffect(() => {
+    if (!boardState) return;
+    publishAudienceSnapshot(
+      createAudienceSnapshot({
+        board: boardState,
+        usedQuestionIds: usedQuestions,
+        activeQuestion,
+        teams,
+      })
+    );
+  }, [activeQuestion, boardState, teams, usedQuestions]);
 
   // ── Edit mode state ──────────────────────────────────────────────────────────
   const [editMode, setEditMode] = useState(false);
@@ -121,6 +139,29 @@ export default function GameBoard() {
     setUsedQuestions((prev) => new Set(prev).add(questionId));
   }
 
+  function handleOpenAudienceView() {
+    if (!boardState) return;
+
+    publishAudienceSnapshot(
+      createAudienceSnapshot({
+        board: boardState,
+        usedQuestionIds: usedQuestions,
+        activeQuestion,
+        teams,
+      })
+    );
+
+    const audienceWindow = window.open(
+      "/trivia/audience",
+      "trivia-free-for-all-audience",
+      "popup,width=1440,height=900"
+    );
+
+    if (!audienceWindow) {
+      showToast("Allow pop-ups to open the audience view.", "error");
+    }
+  }
+
   async function handleRefreshActiveQuestion(id: string, newQuestion: string, newAnswer: string) {
     if (!boardState) return;
     const updated: BoardState = {
@@ -134,6 +175,9 @@ export default function GameBoard() {
     };
     await saveCurrentBoard(updated);
     setBoardState(updated);
+    setActiveQuestion((current) =>
+      refreshActiveAudienceQuestion(current, id, newQuestion, newAnswer)
+    );
     showToast("Question refreshed!");
   }
 
@@ -643,6 +687,13 @@ export default function GameBoard() {
             <span className="text-slate-600 text-sm">
               {usedCount} / {totalQuestions} used
             </span>
+            <button
+              onClick={handleOpenAudienceView}
+              className="btn-primary"
+              title="Open a clean board for the shared screen. Answers and host controls stay here."
+            >
+              Open Audience View
+            </button>
             {gameSettings?.mode === "ai" && (
               <button
                 onClick={handleBlindStart}
