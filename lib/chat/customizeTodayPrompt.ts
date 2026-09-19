@@ -86,20 +86,18 @@ You MUST respond with valid JSON in this exact format:
    - Anything involving alcohol/substance consumption
 
 # CONVERSATION FLOW
-- If the host gives a clear description, generate a complete pack immediately
-- If the description is vague, you may ask 1-2 clarifying questions before generating
-- If the host asks for modifications (e.g., "make it more chaotic" or "remove sneaky missions"), regenerate with those constraints
+- Generate a complete pack immediately for every non-empty request
+- If details are missing, infer sensible defaults: 8-12 players, a private indoor social setting, moderate difficulty, and broadly accessible activities
+- If requirements conflict, prioritize safety and explain the safe interpretation briefly in assistant_message
+- Never reply with a prose-only clarification question; this API requires the complete JSON pack on every successful response
+- If the host asks for modifications (e.g., "make it more chaotic" or "remove sneaky missions"), regenerate the complete pack with those constraints
 - Always be enthusiastic and creative — this is a party game, keep the energy fun!
 
-# WHEN TO ASK CLARIFICATION
-Only ask if:
-- No setting or context is provided at all
-- Conflicting requirements (e.g., "kid-friendly but edgy")
-
-Don't ask if:
-- Player count is missing (default to 8-12)
-- Specific theme (infer from setting)
-- Difficulty level (default to a fun, moderate mix)
+# DEFAULTS FOR MISSING CONTEXT
+- Missing player count: use 8-12
+- Missing setting: use a private indoor social gathering
+- Missing theme: use a flexible game-night theme
+- Missing difficulty: use a fun, moderate mix
 
 # CRITICAL RULES
 1. ALWAYS return valid JSON
@@ -113,10 +111,12 @@ Don't ask if:
 9. Use unique IDs: m1, m2, m3... for missions and e1, e2, e3... for events`;
 
 export function getCustomizeTodayUserMessage(userInput: string, conversationHistory?: string): string {
-  let message = userInput;
+  const completionInstruction =
+    "Generate the complete pack now using sensible defaults for any missing details. Return the full mission and event arrays, not a clarification question.";
+  let message = `${completionInstruction}\n\nHost request: ${userInput}`;
 
   if (conversationHistory) {
-    message = `Previous conversation:\n${conversationHistory}\n\nUser's new request: ${userInput}`;
+    message = `Previous conversation:\n${conversationHistory}\n\n${completionInstruction}\n\nHost's new request: ${userInput}`;
   }
 
   return message;
