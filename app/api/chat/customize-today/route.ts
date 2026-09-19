@@ -5,6 +5,7 @@ import {
   CUSTOMIZE_TODAY_SYSTEM_PROMPT,
   getCustomizeTodayUserMessage,
 } from "@/lib/chat/customizeTodayPrompt";
+import { LONG_FORM_CHAT_MODEL } from "@/lib/ai/models";
 
 const MAX_RETRIES = 2;
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
       try {
         // Call Claude API with structured output
         const response = await anthropic.messages.create({
-          model: "claude-sonnet-4-6",
+          model: LONG_FORM_CHAT_MODEL,
           max_tokens: 8000,
           temperature: 0.8,
           system: CUSTOMIZE_TODAY_SYSTEM_PROMPT,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { BOARD_BUILDER_SYSTEM_PROMPT, getUserMessage } from "@/lib/chat/boardBuilderPrompt";
+import { LONG_FORM_CHAT_MODEL } from "@/lib/ai/models";
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     // Call Claude API with structured output
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model: LONG_FORM_CHAT_MODEL,
       max_tokens: 4000,
       temperature: 0.7,
       system: BOARD_BUILDER_SYSTEM_PROMPT,
