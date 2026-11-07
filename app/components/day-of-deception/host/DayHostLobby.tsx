@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { createClient } from "@/lib/supabase/client";
 import CustomizeTodayChat from "./CustomizeTodayChat";
 import PackEditor from "./PackEditor";
 import type { MissionPackItem, EventPackItem, ContextSummary } from "@/lib/chat/types";
@@ -44,6 +45,21 @@ export default function DayHostLobby({
   const [eventPack, setEventPack] = useState<EventPackItem[] | null>(null);
   const [applying, setApplying] = useState(false);
   const [packApplied, setPackApplied] = useState(false);
+  const [cadence, setCadence] = useState<string>(config.missionCadence);
+  const [savingCadence, setSavingCadence] = useState(false);
+
+  // How often the server automatically sends Deceivers a new mission
+  async function handleCadenceChange(value: string) {
+    const previous = cadence;
+    setCadence(value);
+    setSavingCadence(true);
+    const { error } = await createClient()
+      .from("traitors_day_sessions")
+      .update({ mission_cadence: value })
+      .eq("id", sessionId);
+    if (error) setCadence(previous);
+    setSavingCadence(false);
+  }
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -245,7 +261,24 @@ export default function DayHostLobby({
             Game Settings
           </h3>
           <div className="bg-white/5 rounded-xl border border-green-900/30 p-4 space-y-3">
-            {configLabels.map(({ key, label }) => (
+            <div className="flex items-center justify-between py-1 gap-3">
+              <span className="text-white/60 text-sm">
+                Automatic missions
+                <span className="block text-white/40 text-xs">Sent to Deceivers all day, no tapping needed</span>
+              </span>
+              <select
+                value={cadence}
+                disabled={savingCadence}
+                onChange={(e) => handleCadenceChange(e.target.value)}
+                className="bg-black/40 border border-green-700/50 rounded-lg px-2 py-1 text-white text-sm"
+              >
+                <option value="manual">Off (I&apos;ll send them)</option>
+                <option value="30">Every 30 min</option>
+                <option value="45">Every 45 min</option>
+                <option value="60">Every hour</option>
+              </select>
+            </div>
+            {configLabels.filter(({ key }) => key !== "missionCadence").map(({ key, label }) => (
               <div
                 key={key}
                 className="flex items-center justify-between py-1"
