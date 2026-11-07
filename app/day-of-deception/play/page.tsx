@@ -5,7 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import AuthModal from "@/app/components/auth/AuthModal";
-import { allowAutoResume, getLastSessionId, savePlayer } from "@/lib/day-of-deception/playerStorage";
+import {
+  allowAutoResume,
+  findSessionByJoinCode,
+  getLastSessionId,
+  savePlayer,
+} from "@/lib/day-of-deception/playerStorage";
 
 function googleFirstName(meta: Record<string, unknown> | undefined): string {
   const full = (meta?.full_name as string) || (meta?.name as string) || (meta?.display_name as string) || "";
@@ -32,6 +37,12 @@ function JoinForm() {
   // Reopening the app drops the player straight back into their game.
   // With a code in the link (a fresh QR scan), offer it instead of forcing it.
   useEffect(() => {
+    // Scanned the QR for a game this phone is already in: go straight back in
+    const sameGame = prefillCode ? findSessionByJoinCode(prefillCode) : null;
+    if (sameGame && allowAutoResume()) {
+      router.replace(`/day-of-deception/play/${sameGame}`);
+      return;
+    }
     const last = getLastSessionId();
     if (!last) return;
     if (!prefillCode && !needsSignIn && allowAutoResume()) {
@@ -92,8 +103,13 @@ function JoinForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to join");
 
-      const { sessionId, playerId, playerToken, playerName } = data;
-      savePlayer(sessionId, { playerId, playerName: playerName || displayName.trim(), playerToken });
+      const { sessionId, playerId, playerToken, playerName, joinCode } = data;
+      savePlayer(sessionId, {
+        playerId,
+        playerName: playerName || displayName.trim(),
+        playerToken,
+        joinCode: joinCode || code.trim(),
+      });
       router.push(`/day-of-deception/play/${sessionId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -124,14 +140,6 @@ function JoinForm() {
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
       <h1 className="text-3xl font-bold text-green-500 mb-8">Join Game</h1>
 
-      {lastSessionId && (
-        <Link
-          href={`/day-of-deception/play/${lastSessionId}`}
-          className="w-full max-w-sm mb-6 py-3 rounded-xl text-center font-semibold bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-all"
-        >
-          Back to my current game
-        </Link>
-      )}
 
       {authLoading || checkingGame ? (
         <div className="text-green-300 animate-pulse">Loading...</div>
@@ -200,9 +208,19 @@ function JoinForm() {
         </form>
       )}
 
-      <Link href="/day-of-deception" className="mt-8 text-green-400/50 hover:text-white transition-colors text-sm">
-        Back
-      </Link>
+      <div className="mt-8 flex flex-col items-center gap-3 text-sm">
+        {lastSessionId && (
+          <Link
+            href={`/day-of-deception/play/${lastSessionId}`}
+            className="text-green-300/80 hover:text-white underline underline-offset-4"
+          >
+            {prefillCode ? "Go back to your other game instead" : "Back to my current game"}
+          </Link>
+        )}
+        <Link href="/day-of-deception" className="text-green-400/50 hover:text-white transition-colors">
+          All my games
+        </Link>
+      </div>
 
       <AuthModal isOpen={showEmailSignIn} onClose={() => setShowEmailSignIn(false)} />
     </div>

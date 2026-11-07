@@ -60,6 +60,7 @@ export async function POST(req: Request) {
         playerId: mine.id,
         playerName: mine.display_name,
         playerToken: `${mine.id}:${session.id}`,
+        joinCode,
         rejoined: true,
       });
     }
@@ -129,6 +130,7 @@ export async function POST(req: Request) {
       playerId: player.id,
       playerName: trimmedName,
       playerToken: `${player.id}:${session.id}`,
+      joinCode,
     });
   } catch (err) {
     console.error("Join day session error:", err);

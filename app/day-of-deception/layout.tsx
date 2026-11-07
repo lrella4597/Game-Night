@@ -44,10 +44,10 @@ export default function TraitorsDayLayout({
           Day of Deception
         </Link>
         <Link
-          href="/"
+          href="/day-of-deception"
           className="text-xs text-green-400/60 hover:text-green-300 transition-colors"
         >
-          Exit
+          My games
         </Link>
       </nav>
       <div className="pt-[calc(3rem+env(safe-area-inset-top))]">{children}</div>

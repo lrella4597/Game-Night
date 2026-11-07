@@ -1,10 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Link from "next/link";
 import AuthModal from "@/app/components/auth/AuthModal";
+import { savePlayer } from "@/lib/day-of-deception/playerStorage";
+
+interface PlayingGame {
+  sessionId: string;
+  joinCode: string;
+  status: string;
+  playerId: string;
+  playerName: string;
+  playerToken: string;
+}
+interface HostingGame {
+  sessionId: string;
+  joinCode: string;
+  status: string;
+}
 
 export default function TraitorsDayLandingPage() {
   const router = useRouter();
@@ -12,6 +27,35 @@ export default function TraitorsDayLandingPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [playing, setPlaying] = useState<PlayingGame[]>([]);
+  const [hosting, setHosting] = useState<HostingGame[]>([]);
+
+  // Games this account is still in, so leaving never means losing your spot
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    fetch("/api/day-of-deception/my-games", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        setPlaying(d.playing || []);
+        setHosting(d.hosting || []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  function rejoin(g: PlayingGame) {
+    savePlayer(g.sessionId, {
+      playerId: g.playerId,
+      playerName: g.playerName,
+      playerToken: g.playerToken,
+      joinCode: g.joinCode,
+    });
+    router.push(`/day-of-deception/play/${g.sessionId}`);
+  }
 
   async function handleCreateGame() {
     if (!user) {
@@ -52,6 +96,44 @@ export default function TraitorsDayLandingPage() {
       </p>
 
       <div className="flex flex-col gap-4 w-full max-w-sm">
+        {user && (playing.length > 0 || hosting.length > 0) && (
+          <div className="mb-4">
+            <p className="text-green-300/70 text-sm uppercase tracking-wider mb-2">Your games</p>
+            <div className="flex flex-col gap-2">
+              {playing.map((g) => (
+                <button
+                  key={`p-${g.sessionId}`}
+                  onClick={() => rejoin(g)}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-green-900/40 border border-green-500/40 hover:bg-green-900/60 text-left transition-all"
+                >
+                  <span>
+                    <span className="block text-white font-semibold">Playing as {g.playerName}</span>
+                    <span className="block text-white/50 text-xs font-mono tracking-widest">
+                      {g.joinCode} · {g.status === "lobby" ? "waiting to start" : "in progress"}
+                    </span>
+                  </span>
+                  <span className="text-green-300 font-semibold text-sm">Rejoin →</span>
+                </button>
+              ))}
+              {hosting.map((g) => (
+                <Link
+                  key={`h-${g.sessionId}`}
+                  href={`/day-of-deception/host/${g.sessionId}`}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/15 hover:bg-white/10 transition-all"
+                >
+                  <span>
+                    <span className="block text-white font-semibold">Hosting</span>
+                    <span className="block text-white/50 text-xs font-mono tracking-widest">
+                      {g.joinCode} · {g.status === "lobby" ? "waiting to start" : "in progress"}
+                    </span>
+                  </span>
+                  <span className="text-green-300 font-semibold text-sm">Open →</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         <button
           onClick={handleCreateGame}
           disabled={creating || authLoading}

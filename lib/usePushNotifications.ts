@@ -57,7 +57,7 @@ export function usePushNotifications({
     if (!playerId || !sessionId) return;
     navigator.serviceWorker
       .getRegistration("/")
-      .then((reg) => reg?.pushManager.getSubscription())
+      .then((reg) => (reg ? currentSubscription(reg, Notification.permission === "granted") : null))
       .then(async (sub) => {
         // Only count as on if the server actually saved it; otherwise the
         // prompt stays so the player can try again
@@ -79,12 +79,8 @@ export function usePushNotifications({
       if (perm !== "granted") return;
 
       await navigator.serviceWorker.ready;
-      const sub =
-        (await reg.pushManager.getSubscription()) ??
-        (await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
-        }));
+      const sub = await currentSubscription(reg, true);
+      if (!sub) throw new Error("No push subscription");
 
       if (await saveSubscription(sub)) {
         setSubscribed(true);
@@ -99,6 +95,32 @@ export function usePushNotifications({
   }
 
   return { permission, subscribed, subscribe, supported, needsInstall, error };
+}
+
+// The phone's subscription, re-created if it was made with a different
+// server key (e.g. after the notification keys are replaced). An old-key
+// subscription looks fine on the phone but every alert to it is rejected.
+async function currentSubscription(
+  reg: ServiceWorkerRegistration,
+  createIfMissing: boolean
+): Promise<PushSubscription | null> {
+  const serverKey = urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!);
+  let sub = await reg.pushManager.getSubscription();
+
+  if (sub?.options.applicationServerKey) {
+    const a = new Uint8Array(sub.options.applicationServerKey);
+    const b = new Uint8Array(serverKey);
+    const same = a.length === b.length && a.every((v, i) => v === b[i]);
+    if (!same) {
+      await sub.unsubscribe();
+      sub = null;
+    }
+  }
+
+  if (!sub && createIfMissing) {
+    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: serverKey });
+  }
+  return sub;
 }
 
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
