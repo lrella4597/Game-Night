@@ -138,6 +138,8 @@ export default function CustomizeTodayChat({
         body: JSON.stringify({
           message: messageText,
           conversationHistory,
+          // Lets the AI use what players said about themselves when they joined
+          sessionId,
         }),
       });
 

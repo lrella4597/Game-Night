@@ -48,6 +48,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Player not in this game" }, { status: 410 });
     }
 
+    // Has this player answered the "about you" questions? Separate query so a
+    // database without the profile column doesn't break the whole check.
+    const { data: profileRow } = await supabase
+      .from("traitors_day_players")
+      .select("profile")
+      .eq("id", playerId)
+      .maybeSingle();
+    const hasProfile = !!profileRow?.profile;
+
     const phase: string = gs?.phase ?? "lobby";
     const now = Date.now();
     const remaining = (startedAt: string | null, seconds: number | null) => {
@@ -93,7 +102,7 @@ export async function GET(req: Request) {
         };
       }
       timerSeconds = remaining(gs.event_started_at, gs.event_duration_seconds);
-    } else if (phase === "roundtable") {
+    } else if (phase === "roundtable" || phase === "voting") {
       timerSeconds = remaining(gs?.timer_started_at ?? null, gs?.timer_duration_seconds ?? null);
     }
 
@@ -136,13 +145,17 @@ export async function GET(req: Request) {
           }
         : null;
 
-    // Mark this player as back online
-    await supabase
-      .from("traitors_day_players")
-      .update({ is_connected: true, last_seen_at: new Date().toISOString() })
-      .eq("id", playerId);
+    // Mark this player as back online. Only when it changes: every write to
+    // the players table is pushed to every screen in the game.
+    if (!me.is_connected) {
+      await supabase
+        .from("traitors_day_players")
+        .update({ is_connected: true, last_seen_at: new Date().toISOString() })
+        .eq("id", playerId);
+    }
 
     return NextResponse.json({
+      hasProfile,
       finished: session.status === "finished" || session.status === "cancelled" || phase === "end",
       phase,
       players: players.map((p) => ({

@@ -34,14 +34,20 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { message, conversationHistory } = body;
+    const { message, conversationHistory, sessionId } = body;
 
     if (!message || typeof message !== "string") {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
+    // Add what players said about themselves when they joined (host's own game only)
+    let fullMessage = message;
+    if (typeof sessionId === "string" && sessionId) {
+      fullMessage += await playersBlock(supabase, sessionId, user.id);
+    }
+
     const started = Date.now();
-    const outcomes = await generatePackParts(anthropic, message, conversationHistory, {
+    const outcomes = await generatePackParts(anthropic, fullMessage, conversationHistory, {
       timeoutMs: PART_TIMEOUT_MS,
     });
 
@@ -75,4 +81,36 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// "Players, in their own words" section for the AI, from the lobby answers.
+async function playersBlock(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  sessionId: string,
+  hostId: string
+): Promise<string> {
+  const { data: session } = await supabase
+    .from("traitors_day_sessions")
+    .select("host_id")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (!session || session.host_id !== hostId) return "";
+
+  const { data: players, error } = await supabase
+    .from("traitors_day_players")
+    .select("display_name, profile")
+    .eq("session_id", sessionId)
+    .order("joined_at", { ascending: true });
+  if (error || !players || players.length === 0) return "";
+
+  const lines = players.map((p) => {
+    const prof = (p.profile ?? {}) as Record<string, string>;
+    const bits = [
+      prof.about && `into/does: ${prof.about}`,
+      prof.quirk && `friends roast them for: ${prof.quirk}`,
+      prof.today && `today: ${prof.today}`,
+    ].filter(Boolean);
+    return `- ${p.display_name}${bits.length ? `: ${bits.join("; ")}` : " (no answers yet)"}`;
+  });
+  return `\n\nPlayers who joined the game, in their own words (use these details, and spread missions across different people):\n${lines.join("\n")}`;
 }

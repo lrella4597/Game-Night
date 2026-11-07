@@ -122,7 +122,6 @@ export function useDayHostControls({ sessionId, broadcast }: UseDayHostControlsO
   }, [sessionId, broadcast]);
 
   const startVoting = useCallback(async () => {
-    await changePhase("voting");
     // Fetch config for timer
     const { data: session } = await supabase
       .from("traitors_day_sessions")
@@ -130,6 +129,11 @@ export function useDayHostControls({ sessionId, broadcast }: UseDayHostControlsO
       .eq("id", sessionId)
       .single();
     const duration = session?.voting_timer_seconds ?? 120;
+    // Save the timer too, so players who open the app mid-vote see the right countdown
+    await changePhase("voting", {
+      timer_started_at: new Date().toISOString(),
+      timer_duration_seconds: duration,
+    });
     broadcast(DAY_HOST_EVENTS.VOTING_START, {});
     broadcast(DAY_HOST_EVENTS.TIMER_START, { duration });
   }, [sessionId, supabase, changePhase, broadcast]);

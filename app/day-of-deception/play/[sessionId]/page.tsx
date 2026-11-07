@@ -16,8 +16,10 @@ import DayPlayerReveal from "@/app/components/day-of-deception/player/DayPlayerR
 import DayPlayerEnd from "@/app/components/day-of-deception/player/DayPlayerEnd";
 import type { DayPhase, PlayerRole, DayMission } from "@/lib/day-of-deception/types";
 import HowToPlayModal from "@/app/components/HowToPlayModal";
+import AboutYouCard from "@/app/components/day-of-deception/player/AboutYouCard";
 import { usePushNotifications } from "@/lib/usePushNotifications";
 import { loadPlayer, clearPlayer, forgetLastSession } from "@/lib/day-of-deception/playerStorage";
+import { useGameChanges } from "@/lib/day-of-deception/useGameChanges";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyPayload = any;
@@ -82,6 +84,9 @@ export default function TraitorsDayPlayerPage() {
 
   // Vote result
   const [voteResult, setVoteResult] = useState<VoteResult | null>(null);
+
+  // "About you" answers: null until we know, then whether to ask
+  const [hasProfile, setHasProfile] = useState<boolean | null>(null);
 
   // Endgame
   const [endgameData, setEndgameData] = useState<EndgameData | null>(null);
@@ -257,6 +262,7 @@ export default function TraitorsDayPlayerPage() {
 
       setPhase(s.phase);
       setPlayers(s.players);
+      if (typeof s.hasProfile === "boolean") setHasProfile((prev) => prev || s.hasProfile);
       if (s.role) {
         setMyRole(s.role);
         setFellowDeceivers(s.deceivers || []);
@@ -333,6 +339,17 @@ export default function TraitorsDayPlayerPage() {
       console.error("Failed to fetch missions:", err);
     }
   }, [playerId, playerToken, controls]);
+
+  // Live updates straight from the database: the game moves forward for
+  // players even when the host's screen is asleep, and automatic missions
+  // show up the moment the server sends them.
+  useGameChanges(playerId ? sessionId : null, (table) => {
+    if (table === "traitors_day_missions") {
+      if (myRole === "traitor") fetchMissions();
+      return;
+    }
+    syncState();
+  });
 
   useEffect(() => {
     if ((phase === "freeplay" || phase === "event_active") && myRole === "traitor" && playerId) {
@@ -466,6 +483,14 @@ export default function TraitorsDayPlayerPage() {
     return (
       <>
         <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        {hasProfile === false && playerId && playerToken && (
+          <AboutYouCard
+            sessionId={sessionId}
+            playerId={playerId}
+            playerToken={playerToken}
+            onDone={() => setHasProfile(true)}
+          />
+        )}
         <DayPlayerLobby players={players} playerName={playerName ?? ""} />
       </>
     );
