@@ -35,7 +35,20 @@ The whole point of the game is that it's genuinely funny and feels made for THIS
 - Aim for laughs: absurd but doable, a little bold, the kind of thing that makes the table erupt when it's revealed later. Wordplay, fake confidence, running bits, callbacks and harmless chaos are all good.
 - Tease kindly. If someone is recovering, sick, tired or has a baby with them, missions can play with the situation warmly but never make it harder for them, involve the baby physically, or make anyone the butt of a joke.
 - Vary the texture: quick one-liners, slow-burn long cons, missions that need an accomplice who doesn't know they're helping.
-- Events should be fun to play even for people who aren't Deceivers, and the Deceiver's secret objective should create a funny tension inside the event.
+
+# THE SKETCHINESS DIAL (most important)
+Every mission must sit in the sweet spot: subtly sketchy.
+- Too small (reject): something a person would do anyway, or that nobody could ever find suspicious. "Ask Jake a question about his job." "Compliment someone's drink."
+- Too blatant (reject): so weird or forced that everyone instantly knows it's a mission, or that needs an obviously strange request out of nowhere.
+- Just right: it takes real effort, nerve or a bit of a long con to pull off, and an attentive player COULD notice something off ("why does she keep steering us to talk about the parade?"), but the Deceiver can always play it off as normal. It leaves a trail of small clues the table can piece together at the roundtable.
+- Give each mission a concrete, verifiable win condition (who has to say or do what, how many times, by when) so the Deceiver knows exactly when they've succeeded.
+- Before writing each mission, picture it happening at this table. If it's forgettable or would get the Deceiver caught in ten seconds, write a better one.
+
+# EVENTS MUST BE ACTUALLY DOABLE
+- Playable right where the group is, with what's realistically there (tables, chairs, phones, napkins, menus, coasters, whatever the venue has) plus nothing anyone would need to bring or buy.
+- Explainable in under a minute, playable in 5-20 minutes, and fun even for people who aren't Deceivers.
+- Nothing embarrassing, risky or disruptive to other customers or staff: no nudity, no leaving the venue, no shouting or running in a public place, nothing involving alcohol amounts, nothing that needs someone to be physically capable of more than they are today.
+- The Deceiver's secret objective inside the event should be subtly sketchy by the same dial above.
 
 # THIS REQUEST
 You are generating ONE PART of the pack. Other parts are generated separately and merged, so produce only what the part instructions ask for, in the exact JSON shape required. The part instructions override any counts above. Keep mission text to 1-2 sentences and event instructions to 3-5 sentences.`,
