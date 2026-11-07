@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { getLastSessionId, savePlayer } from "@/lib/day-of-deception/playerStorage";
 
 function JoinForm() {
   const router = useRouter();
@@ -13,6 +14,19 @@ function JoinForm() {
   const [name, setName] = useState("");
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastSessionId, setLastSessionId] = useState<string | null>(null);
+
+  // Reopening the app drops the player straight back into their game.
+  // With a code in the link (a fresh QR scan), offer it instead of forcing it.
+  useEffect(() => {
+    const last = getLastSessionId();
+    if (!last) return;
+    if (!prefillCode) {
+      router.replace(`/day-of-deception/play/${last}`);
+    } else {
+      setLastSessionId(last);
+    }
+  }, [prefillCode, router]);
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
@@ -34,9 +48,7 @@ function JoinForm() {
 
       const { sessionId, playerId, playerToken } = await res.json();
 
-      sessionStorage.setItem(`day-of-deception-player-id-${sessionId}`, playerId);
-      sessionStorage.setItem(`day-of-deception-player-name-${sessionId}`, name.trim());
-      sessionStorage.setItem(`day-of-deception-player-token-${sessionId}`, playerToken);
+      savePlayer(sessionId, { playerId, playerName: name.trim(), playerToken });
 
       router.push(`/day-of-deception/play/${sessionId}`);
     } catch (err) {
@@ -48,6 +60,15 @@ function JoinForm() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
       <h1 className="text-3xl font-bold text-green-500 mb-8">Join Game</h1>
+
+      {lastSessionId && (
+        <Link
+          href={`/day-of-deception/play/${lastSessionId}`}
+          className="w-full max-w-sm mb-6 py-3 rounded-xl text-center font-semibold bg-white/10 border border-white/20 text-white hover:bg-white/20 transition-all"
+        >
+          Back to my current game
+        </Link>
+      )}
 
       <form onSubmit={handleJoin} className="flex flex-col gap-4 w-full max-w-sm">
         <input
@@ -77,6 +98,10 @@ function JoinForm() {
         </button>
 
         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+
+        <p className="text-white/40 text-xs text-center">
+          Lost your spot? Enter the same code and the exact name you joined with.
+        </p>
       </form>
 
       <Link href="/day-of-deception" className="mt-8 text-green-400/50 hover:text-white transition-colors text-sm">

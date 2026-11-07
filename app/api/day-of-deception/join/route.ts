@@ -34,8 +34,37 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Game not found. Check your code and try again." }, { status: 404 });
     }
 
+    // Same name in the same game: hand back that player so someone whose phone
+    // lost its saved login (new phone, cleared Safari, Safari vs home screen app)
+    // can get back into a game that has already started.
+    const { data: existingPlayer } = await supabase
+      .from("traitors_day_players")
+      .select("id")
+      .eq("session_id", session.id)
+      .ilike("display_name", trimmedName.replace(/[%_\\]/g, "\\$&"))
+      .maybeSingle();
+
+    if (existingPlayer) {
+      if (session.status === "finished" || session.status === "cancelled") {
+        return NextResponse.json({ error: "This game has ended." }, { status: 400 });
+      }
+      await supabase
+        .from("traitors_day_players")
+        .update({ is_connected: true, last_seen_at: new Date().toISOString() })
+        .eq("id", existingPlayer.id);
+      return NextResponse.json({
+        sessionId: session.id,
+        playerId: existingPlayer.id,
+        playerToken: `${existingPlayer.id}:${session.id}`,
+        rejoined: true,
+      });
+    }
+
     if (session.status !== "lobby") {
-      return NextResponse.json({ error: "This game has already started or ended." }, { status: 400 });
+      return NextResponse.json(
+        { error: "This game has already started. To get back in, use the exact name you joined with." },
+        { status: 400 }
+      );
     }
 
     const { count } = await supabase
@@ -45,17 +74,6 @@ export async function POST(req: Request) {
 
     if (count !== null && count >= session.max_players) {
       return NextResponse.json({ error: "This game is full." }, { status: 400 });
-    }
-
-    const { data: existingPlayer } = await supabase
-      .from("traitors_day_players")
-      .select("id")
-      .eq("session_id", session.id)
-      .eq("display_name", trimmedName)
-      .maybeSingle();
-
-    if (existingPlayer) {
-      return NextResponse.json({ error: "That name is already taken. Pick another!" }, { status: 409 });
     }
 
     const colorIndex = (count ?? 0) % PLAYER_COLORS.length;

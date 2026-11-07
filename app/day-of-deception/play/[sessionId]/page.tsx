@@ -17,6 +17,7 @@ import DayPlayerEnd from "@/app/components/day-of-deception/player/DayPlayerEnd"
 import type { DayPhase, PlayerRole, DayMission } from "@/lib/day-of-deception/types";
 import HowToPlayModal from "@/app/components/HowToPlayModal";
 import { usePushNotifications } from "@/lib/usePushNotifications";
+import { loadPlayer, clearPlayer } from "@/lib/day-of-deception/playerStorage";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyPayload = any;
@@ -56,7 +57,7 @@ export default function TraitorsDayPlayerPage() {
   const router = useRouter();
   const sessionId = params.sessionId as string;
 
-  // Player identity from sessionStorage
+  // Player identity (persisted in localStorage, survives closing the app)
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState<string | null>(null);
   const [playerToken, setPlayerToken] = useState<string | null>(null);
@@ -88,21 +89,19 @@ export default function TraitorsDayPlayerPage() {
   // Mission polling ref
   const missionPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Load player identity from sessionStorage
+  // Load player identity
   useEffect(() => {
     if (!sessionId) return;
-    const id = sessionStorage.getItem(`day-of-deception-player-id-${sessionId}`);
-    const name = sessionStorage.getItem(`day-of-deception-player-name-${sessionId}`);
-    const token = sessionStorage.getItem(`day-of-deception-player-token-${sessionId}`);
+    const stored = loadPlayer(sessionId);
 
-    if (!id || !name || !token) {
-      router.push(`/day-of-deception/play?code=`);
+    if (!stored) {
+      router.replace(`/day-of-deception/play`);
       return;
     }
 
-    setPlayerId(id);
-    setPlayerName(name);
-    setPlayerToken(token);
+    setPlayerId(stored.playerId);
+    setPlayerName(stored.playerName);
+    setPlayerToken(stored.playerToken);
   }, [sessionId, router]);
 
   // ── Realtime ──────────────────────────────────────────────────────────────
@@ -122,8 +121,14 @@ export default function TraitorsDayPlayerPage() {
     broadcast,
   });
 
-  const { permission: pushPermission, subscribed: pushSubscribed, subscribe: subscribePush } =
-    usePushNotifications({ playerId: playerId || "", sessionId });
+  const {
+    permission: pushPermission,
+    subscribed: pushSubscribed,
+    subscribe: subscribePush,
+    supported: pushSupported,
+    needsInstall: pushNeedsInstall,
+  } = usePushNotifications({ playerId: playerId || "", sessionId });
+  const [pushPromptDismissed, setPushPromptDismissed] = useState(false);
 
   // ── Timer ─────────────────────────────────────────────────────────────────
 
@@ -217,13 +222,74 @@ export default function TraitorsDayPlayerPage() {
     return onBroadcast(DAY_HOST_EVENTS.PLAYER_KICKED, (raw: unknown) => {
       const payload = raw as AnyPayload;
       if (payload.playerId === playerId) {
-        sessionStorage.removeItem(`day-of-deception-player-id-${sessionId}`);
-        sessionStorage.removeItem(`day-of-deception-player-name-${sessionId}`);
-        sessionStorage.removeItem(`day-of-deception-player-token-${sessionId}`);
+        clearPlayer(sessionId);
         router.push("/day-of-deception/play");
       }
     });
   }, [onBroadcast, playerId, sessionId, router]);
+
+  // ── Catch up with the game ────────────────────────────────────────────────
+  // Live broadcasts are missed while the phone is closed or asleep, so pull a
+  // snapshot from the server on open, whenever the app comes back to the
+  // foreground, and when the realtime connection reconnects.
+
+  const syncState = useCallback(async () => {
+    if (!playerId || !playerToken) return;
+    try {
+      const params = new URLSearchParams({ sessionId, playerId, token: playerToken });
+      const res = await fetch(`/api/day-of-deception/player-state?${params}`, { cache: "no-store" });
+      if (res.status === 410 || res.status === 403) {
+        clearPlayer(sessionId);
+        router.replace("/day-of-deception/play");
+        return;
+      }
+      if (!res.ok) return;
+      const s = await res.json();
+
+      setPhase(s.phase);
+      setPlayers(s.players);
+      if (s.role) {
+        setMyRole(s.role);
+        setFellowDeceivers(s.deceivers || []);
+      }
+      setEventData(s.event);
+      if (s.phase === "voting") {
+        setVoteSubmitted(!!s.voteSubmitted);
+        if (s.voteTarget) setVoteTarget(s.voteTarget);
+      }
+      if (s.voteResult) setVoteResult(s.voteResult);
+      if (s.endgame) setEndgameData(s.endgame);
+      if (typeof s.timerSeconds === "number" && s.timerSeconds > 0) {
+        startTimer(s.timerSeconds);
+      } else if (s.phase !== "voting") {
+        clearTimer();
+      }
+    } catch (err) {
+      console.error("Failed to sync game state:", err);
+    }
+  }, [sessionId, playerId, playerToken, router, startTimer, clearTimer]);
+
+  useEffect(() => {
+    syncState();
+  }, [syncState]);
+
+  useEffect(() => {
+    if (connected) syncState();
+  }, [connected, syncState]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") syncState();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onVisible);
+    window.addEventListener("online", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onVisible);
+      window.removeEventListener("online", onVisible);
+    };
+  }, [syncState]);
 
   // ── Role fetching ─────────────────────────────────────────────────────────
 
@@ -340,28 +406,56 @@ export default function TraitorsDayPlayerPage() {
     />
   );
 
+  // Notification prompt, shown in every phase until handled, so players who
+  // rejoin mid-game still get asked.
+  const pushPrompt = pushPromptDismissed || pushSubscribed || pushPermission === "denied" ? null : pushNeedsInstall ? (
+    <div className="fixed bottom-4 left-4 right-4 z-50 bg-gray-900 border border-green-500/40 rounded-xl p-4 flex items-start gap-3 shadow-lg">
+      <span className="text-2xl">📲</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-white text-sm font-semibold">Add this game to your home screen</p>
+        <p className="text-white/60 text-xs mt-1">
+          iPhones only send game alerts to home screen apps. Tap the Share button, then
+          &ldquo;Add to Home Screen&rdquo;. Open it from there and join with the same code and name.
+        </p>
+      </div>
+      <button
+        onClick={() => setPushPromptDismissed(true)}
+        className="shrink-0 text-white/40 hover:text-white text-sm"
+        aria-label="Dismiss"
+      >
+        ✕
+      </button>
+    </div>
+  ) : pushSupported ? (
+    <div className="fixed bottom-4 left-4 right-4 z-50 bg-gray-900 border border-green-500/40 rounded-xl p-4 flex items-center gap-3 shadow-lg">
+      <span className="text-2xl">🔔</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-white text-sm font-semibold">Enable notifications</p>
+        <p className="text-white/50 text-xs">Get secret alerts even when your phone is locked</p>
+      </div>
+      <button
+        onClick={subscribePush}
+        className="shrink-0 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold rounded-lg transition-colors"
+      >
+        Allow
+      </button>
+    </div>
+  ) : null;
+
+  return (
+    <>
+      {pushPrompt}
+      {renderPhase()}
+    </>
+  );
+
+  function renderPhase() {
   // Phase rendering
   if (phase === "lobby") {
     return (
       <>
         <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
-        {/* Notification permission prompt */}
-        {pushPermission !== "denied" && !pushSubscribed && (
-          <div className="fixed bottom-4 left-4 right-4 z-50 bg-gray-900 border border-green-500/40 rounded-xl p-4 flex items-center gap-3 shadow-lg">
-            <span className="text-2xl">🔔</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-semibold">Enable notifications</p>
-              <p className="text-white/50 text-xs">Get secret alerts even when your phone is locked</p>
-            </div>
-            <button
-              onClick={subscribePush}
-              className="shrink-0 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold rounded-lg transition-colors"
-            >
-              Allow
-            </button>
-          </div>
-        )}
-        <DayPlayerLobby players={players} playerName={playerName} />
+        <DayPlayerLobby players={players} playerName={playerName ?? ""} />
       </>
     );
   }
@@ -424,7 +518,7 @@ export default function TraitorsDayPlayerPage() {
         <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
         <DayPlayerVoting
           players={players}
-          myPlayerId={playerId}
+          myPlayerId={playerId ?? ""}
           selectedTarget={voteTarget}
           onSelectTarget={setVoteTarget}
           onSubmit={handleVoteSubmit}
@@ -462,4 +556,5 @@ export default function TraitorsDayPlayerPage() {
       </div>
     </div>
   );
+  }
 }

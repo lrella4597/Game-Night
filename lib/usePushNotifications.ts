@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface UsePushNotificationsOptions {
   playerId: string;
@@ -15,47 +15,78 @@ export function usePushNotifications({
 }: UsePushNotificationsOptions) {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [subscribed, setSubscribed] = useState(false);
+  // iPhone Safari only allows web push once the site is added to the home screen
+  const [needsInstall, setNeedsInstall] = useState(false);
+  const [supported, setSupported] = useState(true);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setPermission(Notification.permission);
-    }
-  }, []);
-
-  async function subscribe() {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
-
-    try {
-      // Register service worker
-      const reg = await navigator.serviceWorker.register("/sw.js");
-
-      // Request permission
-      const perm = await Notification.requestPermission();
-      setPermission(perm);
-      if (perm !== "granted") return;
-
-      // Subscribe to push
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(
-          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
-        ),
-      });
-
-      // Send subscription to server
+  const saveSubscription = useCallback(
+    async (sub: PushSubscription) => {
       await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subscription: sub.toJSON(), playerId, sessionId, gameType }),
       });
+    },
+    [playerId, sessionId, gameType]
+  );
 
+  // On load: detect support, and if this phone already subscribed, re-link it
+  // to this game so it keeps getting alerts after the app is reopened.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if ("Notification" in window) setPermission(Notification.permission);
+
+    const hasPush = "serviceWorker" in navigator && "PushManager" in window;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const standalone =
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+    if (!hasPush) {
+      setSupported(false);
+      setNeedsInstall(isIOS && !standalone);
+      return;
+    }
+
+    if (!playerId || !sessionId) return;
+    navigator.serviceWorker
+      .getRegistration("/")
+      .then((reg) => reg?.pushManager.getSubscription())
+      .then(async (sub) => {
+        if (sub && Notification.permission === "granted") {
+          setSubscribed(true);
+          await saveSubscription(sub);
+        }
+      })
+      .catch(() => {});
+  }, [playerId, sessionId, saveSubscription]);
+
+  async function subscribe() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+
+    try {
+      const reg = await navigator.serviceWorker.register("/sw.js");
+
+      const perm = await Notification.requestPermission();
+      setPermission(perm);
+      if (perm !== "granted") return;
+
+      await navigator.serviceWorker.ready;
+      const sub =
+        (await reg.pushManager.getSubscription()) ??
+        (await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
+        }));
+
+      await saveSubscription(sub);
       setSubscribed(true);
     } catch (err) {
       console.error("Push subscription error:", err);
     }
   }
 
-  return { permission, subscribed, subscribe };
+  return { permission, subscribed, subscribe, supported, needsInstall };
 }
 
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
