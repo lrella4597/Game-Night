@@ -39,9 +39,9 @@ export async function sendPush(
     );
   } catch (err: unknown) {
     // 410 Gone means the subscription is no longer valid — ignore silently
-    const status = (err as { statusCode?: number })?.statusCode;
-    if (status !== 410) {
-      console.error("Push send error:", err);
+    const e = err as { statusCode?: number; body?: string; message?: string };
+    if (e?.statusCode !== 410) {
+      console.error("Push send error:", e?.statusCode, e?.body || e?.message || err);
     }
   }
 }
