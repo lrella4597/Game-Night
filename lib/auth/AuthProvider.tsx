@@ -12,7 +12,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   signInWithMagicLink: (email: string) => Promise<{ error: AuthError | null }>;
-  signInWithGoogle: () => Promise<{ error: AuthError | null }>;
+  /** next: path to return to after sign-in (defaults to the current page) */
+  signInWithGoogle: (next?: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -76,8 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  // Always send people back to the site they started on (live site, deploy
+  // preview, or the app), never a hard-coded domain.
   const signInWithMagicLink = async (email: string) => {
-    const base = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    const base = window.location.origin;
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -87,9 +90,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
-  const signInWithGoogle = async () => {
-    const base = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-    const redirectTo = `${base}/auth/callback`;
+  const signInWithGoogle = async (next?: string) => {
+    const returnTo = next ?? `${window.location.pathname}${window.location.search}`;
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(returnTo)}`;
     if (AUTH_DEBUG) {
       console.log('[Auth] signInWithGoogle redirectTo:', redirectTo);
     }

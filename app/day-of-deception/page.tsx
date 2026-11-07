@@ -4,15 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Link from "next/link";
+import AuthModal from "@/app/components/auth/AuthModal";
 
 export default function TraitorsDayLandingPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
 
   async function handleCreateGame() {
-    if (!user) return;
+    if (!user) {
+      setShowAuth(true);
+      return;
+    }
     setCreating(true);
     setError(null);
 
@@ -38,6 +43,7 @@ export default function TraitorsDayLandingPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
+      <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
       <h1 className="text-5xl md:text-7xl font-bold text-green-500 mb-2 tracking-tight text-center font-[family-name:var(--font-chalk)]">
         Day of Deception
       </h1>
@@ -48,14 +54,19 @@ export default function TraitorsDayLandingPage() {
       <div className="flex flex-col gap-4 w-full max-w-sm">
         <button
           onClick={handleCreateGame}
-          disabled={creating || authLoading || !user}
+          disabled={creating || authLoading}
           className="w-full py-4 px-6 rounded-xl font-bold text-xl bg-green-600 text-white hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
         >
           {creating ? "Creating..." : "Host a Game"}
         </button>
 
         {!user && !authLoading && (
-          <p className="text-sm text-green-300/60 text-center">Sign in to host a game</p>
+          <button
+            onClick={() => setShowAuth(true)}
+            className="text-sm text-green-300/80 hover:text-green-200 underline underline-offset-4 text-center"
+          >
+            Sign in to host a game
+          </button>
         )}
 
         <div className="flex items-center gap-3 my-2">
