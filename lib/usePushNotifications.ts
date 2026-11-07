@@ -18,14 +18,20 @@ export function usePushNotifications({
   // iPhone Safari only allows web push once the site is added to the home screen
   const [needsInstall, setNeedsInstall] = useState(false);
   const [supported, setSupported] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const saveSubscription = useCallback(
-    async (sub: PushSubscription) => {
-      await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscription: sub.toJSON(), playerId, sessionId, gameType }),
-      });
+    async (sub: PushSubscription): Promise<boolean> => {
+      try {
+        const res = await fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subscription: sub.toJSON(), playerId, sessionId, gameType }),
+        });
+        return res.ok;
+      } catch {
+        return false;
+      }
     },
     [playerId, sessionId, gameType]
   );
@@ -53,9 +59,10 @@ export function usePushNotifications({
       .getRegistration("/")
       .then((reg) => reg?.pushManager.getSubscription())
       .then(async (sub) => {
-        if (sub && Notification.permission === "granted") {
+        // Only count as on if the server actually saved it; otherwise the
+        // prompt stays so the player can try again
+        if (sub && Notification.permission === "granted" && (await saveSubscription(sub))) {
           setSubscribed(true);
-          await saveSubscription(sub);
         }
       })
       .catch(() => {});
@@ -79,14 +86,19 @@ export function usePushNotifications({
           applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
         }));
 
-      await saveSubscription(sub);
-      setSubscribed(true);
+      if (await saveSubscription(sub)) {
+        setSubscribed(true);
+        setError(null);
+      } else {
+        setError("Couldn't turn on notifications. Try again in a moment.");
+      }
     } catch (err) {
       console.error("Push subscription error:", err);
+      setError("Couldn't turn on notifications. Try again in a moment.");
     }
   }
 
-  return { permission, subscribed, subscribe, supported, needsInstall };
+  return { permission, subscribed, subscribe, supported, needsInstall, error };
 }
 
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
