@@ -27,7 +27,17 @@ export const PART_SYSTEM_PROMPT = [
   section("EVENT PACK REQUIREMENTS"),
   section("SAFETY RULES (STRICTLY ENFORCED)"),
   section("DEFAULTS FOR MISSING CONTEXT"),
-  `# THIS REQUEST
+  `# WHAT MAKES A GREAT CHALLENGE
+The whole point of the game is that it's genuinely funny and feels made for THIS group on THIS day. Think reality-TV secret missions: the Deceiver has to pull off something specific and slightly absurd in plain sight while everyone else wonders why they're acting weird.
+
+- Build on the actual details the host gave you: use people's names, their jobs, what's going on with them today, the venue and what's there (menus, taps, games, staff), the time of day. A mission that could be used at any party is a weak mission.
+- Make them specific and checkable, with a clear finish line: "Get Jake to demonstrate a stretch on someone other than you" beats "talk to Jake about his job".
+- Aim for laughs: absurd but doable, a little bold, the kind of thing that makes the table erupt when it's revealed later. Wordplay, fake confidence, running bits, callbacks and harmless chaos are all good.
+- Tease kindly. If someone is recovering, sick, tired or has a baby with them, missions can play with the situation warmly but never make it harder for them, involve the baby physically, or make anyone the butt of a joke.
+- Vary the texture: quick one-liners, slow-burn long cons, missions that need an accomplice who doesn't know they're helping.
+- Events should be fun to play even for people who aren't Deceivers, and the Deceiver's secret objective should create a funny tension inside the event.
+
+# THIS REQUEST
 You are generating ONE PART of the pack. Other parts are generated separately and merged, so produce only what the part instructions ask for, in the exact JSON shape required. The part instructions override any counts above. Keep mission text to 1-2 sentences and event instructions to 3-5 sentences.`,
 ].join("\n\n");
 
@@ -52,11 +62,43 @@ const eventsSchema = {
   properties: { event_pack: props.event_pack },
 } as const;
 
+// Small pieces so every call finishes in a few seconds even on a stronger
+// model. Parts run in parallel and can't see each other, so each gets its own
+// angle to keep the pack varied (otherwise they repeat the same idea).
+const MISSION_PARTS: { category: string; angle: string; risk: string }[] = [
+  { category: "social", angle: "built on one specific person's job, hobby or what's going on with them today", risk: "1 low and 1 medium" },
+  { category: "social", angle: "pulling two people into the same bit without them realizing they're connected", risk: "1 medium and 1 high" },
+  { category: "social", angle: "involving staff, strangers or the venue itself (politely)", risk: "1 low and 1 high" },
+  { category: "conversational", angle: "a made-up fact, rumor or tradition about the venue, the town or the occasion that others start repeating", risk: "1 low and 1 medium" },
+  { category: "conversational", angle: "a running bit, catchphrase or fake confidence the Deceiver keeps up over time", risk: "1 medium and 1 high" },
+  { category: "conversational", angle: "steering the group into a debate, vote or story without revealing you started it", risk: "1 low and 1 high" },
+  { category: "sneaky", angle: "objects around you (coasters, menus, napkins, game pieces), never anyone's food, drink or belongings", risk: "1 low and 1 medium" },
+  { category: "sneaky", angle: "seating, positions or where things are, changing it so smoothly nobody can say when it happened", risk: "1 medium and 1 high" },
+  { category: "sneaky", angle: "spreading a habit, gesture or phrase to others without ever asking them to do it", risk: "1 low and 1 high" },
+];
+
+const CATEGORY_HINT: Record<string, string> = {
+  social: "interacting with specific people",
+  conversational: "steering conversations",
+  sneaky: "physical actions without being noticed",
+};
+
+const EVENT_PARTS: [string, string][] = [
+  ["active", "light physical/active challenge that suits the venue"],
+  ["competitive", "head-to-head or team competition"],
+  ["debate", "debate, hot takes or mock trial"],
+  ["creative", "creative/collaborative make-something-together"],
+  ["guessing", "guessing or bluffing party game"],
+  ["improv", "storytelling or improv performance"],
+  ["trivia", "trivia or quiz built around the group and the setting"],
+  ["ceremony", "awards, toasts or ceremony to cap the night"],
+];
+
 export const PACK_PARTS: PackPart[] = [
   {
     key: "summary",
     instructions:
-      "Part: summary only. Write assistant_message: 2-4 enthusiastic sentences telling the host you built a custom pack of about 18 Deceiver missions and 8 group events tailored to their event, mentioning a couple of specific ways it fits their setting. Then fill context_summary from the host's request (playerCount null if not given; conversationHistory: one-line recap of what the host asked for).",
+      "Part: summary only. Write assistant_message: 2-4 enthusiastic sentences telling the host you built a custom pack of 18 Deceiver missions and 8 group events tailored to their event, mentioning a couple of specific ways it fits their setting. Then fill context_summary from the host's request (playerCount null if not given; conversationHistory: one-line recap of what the host asked for).",
     schema: {
       type: "object",
       additionalProperties: false,
@@ -66,43 +108,20 @@ export const PACK_PARTS: PackPart[] = [
         context_summary: props.context_summary,
       },
     },
-    maxTokens: 1000,
+    maxTokens: 800,
   },
-  {
-    key: "missions-social",
-    instructions:
-      'Part: missions only. Generate exactly 6 missions, all with category "social" (interacting with specific people). Mix risk levels: 2 low, 3 medium, 1 high.',
+  ...MISSION_PARTS.map(({ category, angle, risk }, i) => ({
+    key: `missions-${category}-${i}`,
+    instructions: `Part: missions only. Generate exactly 2 missions, both with category "${category}" (${CATEGORY_HINT[category]}). Angle for both: ${angle}. Risk levels: ${risk}.`,
     schema: missionsSchema,
-    maxTokens: 1500,
-  },
-  {
-    key: "missions-conversational",
-    instructions:
-      'Part: missions only. Generate exactly 6 missions, all with category "conversational" (steering conversations). Mix risk levels: 2 low, 3 medium, 1 high.',
-    schema: missionsSchema,
-    maxTokens: 1500,
-  },
-  {
-    key: "missions-sneaky",
-    instructions:
-      'Part: missions only. Generate exactly 6 missions, all with category "sneaky" (physical actions without being noticed). Mix risk levels: 2 low, 2 medium, 2 high.',
-    schema: missionsSchema,
-    maxTokens: 1500,
-  },
-  {
-    key: "events-active",
-    instructions:
-      "Part: events only. Generate exactly 4 events: 2 physical/active events and 2 competitive events. Give most of them a deceiverSecretMission.",
+    maxTokens: 600,
+  })),
+  ...EVENT_PARTS.map(([key, kind]) => ({
+    key: `events-${key}`,
+    instructions: `Part: events only. Generate exactly 1 event: a ${kind}. Give it a deceiverSecretMission.`,
     schema: eventsSchema,
-    maxTokens: 2500,
-  },
-  {
-    key: "events-social",
-    instructions:
-      "Part: events only. Generate exactly 4 events: 2 conversation/debate events and 2 creative/collaborative events. Give most of them a deceiverSecretMission.",
-    schema: eventsSchema,
-    maxTokens: 2500,
-  },
+    maxTokens: 800,
+  })),
 ];
 
 export function getPartUserMessage(part: PackPart, userInput: string, conversationHistory?: string): string {

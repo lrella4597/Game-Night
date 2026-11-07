@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
-import { LONG_FORM_CHAT_MODEL } from "@/lib/ai/models";
+import { PACK_PART_MODEL } from "@/lib/ai/models";
 import {
   PACK_PARTS,
   PART_SYSTEM_PROMPT,
@@ -11,7 +11,10 @@ import {
 
 // Each piece must finish well inside the hosting platform's request limit, so
 // the host gets a clear error from us rather than a generic platform timeout.
-const PART_TIMEOUT_MS = 9000;
+// Pieces normally finish in ~6s. One that runs past this is dropped and the
+// pack is returned without it, rather than the whole request hitting the
+// platform's ~10s limit and failing.
+const PART_TIMEOUT_MS = 7500;
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,11 +50,13 @@ export async function POST(req: NextRequest) {
       PACK_PARTS.map(async (part) => {
         const response = await anthropic.messages.create(
           {
-            model: LONG_FORM_CHAT_MODEL,
+            model: PACK_PART_MODEL,
             max_tokens: part.maxTokens,
-            temperature: 0.8,
+            // No thinking and low effort keep each piece fast enough
+            thinking: { type: "between_tools" } as unknown as Anthropic.ThinkingConfigParam,
             system: PART_SYSTEM_PROMPT,
             output_config: {
+              effort: "low",
               format: { type: "json_schema", schema: part.schema as Record<string, unknown> },
             },
             messages: [
