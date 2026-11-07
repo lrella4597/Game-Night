@@ -328,7 +328,7 @@ export default function CustomizeTodayChat({
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-400"></div>
                 <span className="text-sm text-green-300/70">
-                  Designing your pack...
+                  Designing your pack... this takes about 20 seconds
                 </span>
               </div>
             </div>
