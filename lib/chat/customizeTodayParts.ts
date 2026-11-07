@@ -52,6 +52,31 @@ const eventsSchema = {
   properties: { event_pack: props.event_pack },
 } as const;
 
+// Small pieces (2-3 items each) so every call finishes in a few seconds.
+// Measured on Haiku 4.5: ~6 missions or ~4 events per call took 4-10s,
+// too close to the platform limit once its own overhead is added.
+const MISSION_PARTS: [string, string, string][] = [
+  ["social", "low", "2 low and 1 medium"],
+  ["social", "high", "1 medium and 2 high"],
+  ["conversational", "low", "2 low and 1 medium"],
+  ["conversational", "high", "1 medium and 2 high"],
+  ["sneaky", "low", "2 low and 1 medium"],
+  ["sneaky", "high", "1 medium and 2 high"],
+];
+
+const CATEGORY_HINT: Record<string, string> = {
+  social: "interacting with specific people",
+  conversational: "steering conversations",
+  sneaky: "physical actions without being noticed",
+};
+
+const EVENT_PARTS: [string, string][] = [
+  ["active", "physical/active"],
+  ["competitive", "competitive"],
+  ["debate", "conversation/debate"],
+  ["creative", "creative/collaborative"],
+];
+
 export const PACK_PARTS: PackPart[] = [
   {
     key: "summary",
@@ -66,43 +91,20 @@ export const PACK_PARTS: PackPart[] = [
         context_summary: props.context_summary,
       },
     },
-    maxTokens: 1000,
+    maxTokens: 800,
   },
-  {
-    key: "missions-social",
-    instructions:
-      'Part: missions only. Generate exactly 6 missions, all with category "social" (interacting with specific people). Mix risk levels: 2 low, 3 medium, 1 high.',
+  ...MISSION_PARTS.map(([category, tier, mix]) => ({
+    key: `missions-${category}-${tier}`,
+    instructions: `Part: missions only. Generate exactly 3 missions, all with category "${category}" (${CATEGORY_HINT[category]}). Risk levels: ${mix}.`,
     schema: missionsSchema,
-    maxTokens: 1500,
-  },
-  {
-    key: "missions-conversational",
-    instructions:
-      'Part: missions only. Generate exactly 6 missions, all with category "conversational" (steering conversations). Mix risk levels: 2 low, 3 medium, 1 high.',
-    schema: missionsSchema,
-    maxTokens: 1500,
-  },
-  {
-    key: "missions-sneaky",
-    instructions:
-      'Part: missions only. Generate exactly 6 missions, all with category "sneaky" (physical actions without being noticed). Mix risk levels: 2 low, 2 medium, 2 high.',
-    schema: missionsSchema,
-    maxTokens: 1500,
-  },
-  {
-    key: "events-active",
-    instructions:
-      "Part: events only. Generate exactly 4 events: 2 physical/active events and 2 competitive events. Give most of them a deceiverSecretMission.",
+    maxTokens: 800,
+  })),
+  ...EVENT_PARTS.map(([key, kind]) => ({
+    key: `events-${key}`,
+    instructions: `Part: events only. Generate exactly 2 ${kind} events, each with a deceiverSecretMission.`,
     schema: eventsSchema,
-    maxTokens: 2500,
-  },
-  {
-    key: "events-social",
-    instructions:
-      "Part: events only. Generate exactly 4 events: 2 conversation/debate events and 2 creative/collaborative events. Give most of them a deceiverSecretMission.",
-    schema: eventsSchema,
-    maxTokens: 2500,
-  },
+    maxTokens: 1200,
+  })),
 ];
 
 export function getPartUserMessage(part: PackPart, userInput: string, conversationHistory?: string): string {

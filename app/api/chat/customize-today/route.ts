@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
-import { LONG_FORM_CHAT_MODEL } from "@/lib/ai/models";
+import { PACK_PART_MODEL } from "@/lib/ai/models";
 import {
   PACK_PARTS,
   PART_SYSTEM_PROMPT,
@@ -47,11 +47,13 @@ export async function POST(req: NextRequest) {
       PACK_PARTS.map(async (part) => {
         const response = await anthropic.messages.create(
           {
-            model: LONG_FORM_CHAT_MODEL,
+            model: PACK_PART_MODEL,
             max_tokens: part.maxTokens,
-            temperature: 0.8,
+            // Speed matters more than deliberation here: no thinking, low effort
+            thinking: { type: "disabled" },
             system: PART_SYSTEM_PROMPT,
             output_config: {
+              effort: "low",
               format: { type: "json_schema", schema: part.schema as Record<string, unknown> },
             },
             messages: [
