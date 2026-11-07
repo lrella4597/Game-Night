@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { sendPushToSession } from "@/lib/push";
 
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const {
       data: { user },
       error: authError,
@@ -17,7 +19,7 @@ export async function POST(req: Request) {
     const { sessionId } = await req.json();
 
     // Verify host owns session and fetch config
-    const { data: session } = await supabase
+    const { data: session } = await db
       .from("traitors_day_sessions")
       .select("id, host_id, discussion_timer_minutes")
       .eq("id", sessionId)
@@ -30,7 +32,7 @@ export async function POST(req: Request) {
     const timerDurationSeconds = session.discussion_timer_minutes * 60;
 
     // Update game state
-    await supabase
+    await db
       .from("traitors_day_game_state")
       .update({
         phase: "roundtable",
@@ -40,7 +42,7 @@ export async function POST(req: Request) {
       })
       .eq("session_id", sessionId);
 
-    await sendPushToSession(supabase, sessionId, {
+    await sendPushToSession(db, sessionId, {
       title: "🗣️ Roundtable Has Started",
       body: "Come together — it's time to discuss who you suspect!",
       tag: "roundtable",

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { verifyPlayer } from "@/lib/day-of-deception/playerAuth";
 
 // A player's "about you" answers, given in the lobby. Customize Today reads
@@ -15,6 +16,7 @@ export async function POST(req: Request) {
     }
 
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const auth = await verifyPlayer(supabase, sessionId, playerId, token);
     if (!auth.ok) return auth.response;
 
@@ -24,7 +26,7 @@ export async function POST(req: Request) {
       if (typeof v === "string" && v.trim()) clean[f] = v.trim().slice(0, MAX_LEN);
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("traitors_day_players")
       .update({ profile: { ...clean, answeredAt: new Date().toISOString() } })
       .eq("id", playerId)

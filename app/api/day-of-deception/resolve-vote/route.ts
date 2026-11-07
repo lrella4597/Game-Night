@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { resolveVotes, determineWinner } from "@/lib/day-of-deception/winCondition";
 
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const {
       data: { user },
       error: authError,
@@ -17,7 +19,7 @@ export async function POST(req: Request) {
     const { sessionId } = await req.json();
 
     // Verify host owns session and fetch config
-    const { data: session } = await supabase
+    const { data: session } = await db
       .from("traitors_day_sessions")
       .select("id, host_id, max_token_vote_bonus")
       .eq("id", sessionId)
@@ -28,7 +30,7 @@ export async function POST(req: Request) {
     }
 
     // Fetch all players with their votes and shadow tokens
-    const { data: players } = await supabase
+    const { data: players } = await db
       .from("traitors_day_players")
       .select("id, display_name, vote_target_id, shadow_tokens, role")
       .eq("session_id", sessionId);
@@ -74,7 +76,7 @@ export async function POST(req: Request) {
     const winner = determineWinner(accusedId, accusedRole);
 
     // Update game state
-    await supabase
+    await db
       .from("traitors_day_game_state")
       .update({
         vote_tally: tally,
@@ -87,7 +89,7 @@ export async function POST(req: Request) {
       .eq("session_id", sessionId);
 
     // Update session status to finished
-    await supabase
+    await db
       .from("traitors_day_sessions")
       .update({ status: "finished", finished_at: new Date().toISOString() })
       .eq("id", sessionId);

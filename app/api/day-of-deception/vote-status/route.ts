@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 
 export async function GET(req: Request) {
   try {
@@ -11,6 +12,7 @@ export async function GET(req: Request) {
     }
 
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const {
       data: { user },
       error: authError,
@@ -21,7 +23,7 @@ export async function GET(req: Request) {
     }
 
     // Verify host owns session
-    const { data: session } = await supabase
+    const { data: session } = await db
       .from("traitors_day_sessions")
       .select("id, host_id")
       .eq("id", sessionId)
@@ -32,13 +34,13 @@ export async function GET(req: Request) {
     }
 
     // Count total players
-    const { count: total } = await supabase
+    const { count: total } = await db
       .from("traitors_day_players")
       .select("id", { count: "exact", head: true })
       .eq("session_id", sessionId);
 
     // Count players who have voted
-    const { count: voted } = await supabase
+    const { count: voted } = await db
       .from("traitors_day_players")
       .select("id", { count: "exact", head: true })
       .eq("session_id", sessionId)

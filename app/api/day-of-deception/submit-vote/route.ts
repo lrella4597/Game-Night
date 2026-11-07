@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { verifyPlayer } from "@/lib/day-of-deception/playerAuth";
 
 export async function POST(req: Request) {
@@ -11,11 +12,12 @@ export async function POST(req: Request) {
     }
 
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const auth = await verifyPlayer(supabase, sessionId, playerId, token);
     if (!auth.ok) return auth.response;
 
     // Verify player exists in this session
-    const { data: player } = await supabase
+    const { data: player } = await db
       .from("traitors_day_players")
       .select("id")
       .eq("id", playerId)
@@ -27,7 +29,7 @@ export async function POST(req: Request) {
     }
 
     // Verify target exists in the same session
-    const { data: target } = await supabase
+    const { data: target } = await db
       .from("traitors_day_players")
       .select("id")
       .eq("id", targetId)
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
     }
 
     // Record vote
-    await supabase
+    await db
       .from("traitors_day_players")
       .update({ vote_target_id: targetId, vote_locked: true })
       .eq("id", playerId);

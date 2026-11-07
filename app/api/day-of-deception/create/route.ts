@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { generateJoinCode } from "@/lib/live/joinCodeUtils";
 import { DEFAULT_DAY_CONFIG } from "@/lib/day-of-deception/types";
 import type { CreateDayRequest } from "@/lib/day-of-deception/types";
@@ -7,6 +8,7 @@ import type { CreateDayRequest } from "@/lib/day-of-deception/types";
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const {
       data: { user },
       error: authError,
@@ -23,7 +25,7 @@ export async function POST(req: Request) {
     let joinCode = generateJoinCode();
     let retries = 0;
     while (retries < 5) {
-      const { data: existing } = await supabase
+      const { data: existing } = await db
         .from("traitors_day_sessions")
         .select("id")
         .eq("join_code", joinCode)
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
     }
 
     // Create session
-    const { data: session, error: sessionError } = await supabase
+    const { data: session, error: sessionError } = await db
       .from("traitors_day_sessions")
       .insert({
         host_id: user.id,
@@ -64,7 +66,7 @@ export async function POST(req: Request) {
     }
 
     // Create initial game state
-    const { error: stateError } = await supabase.from("traitors_day_game_state").insert({
+    const { error: stateError } = await db.from("traitors_day_game_state").insert({
       session_id: session.id,
       phase: "lobby",
       current_event_index: 0,
@@ -74,7 +76,7 @@ export async function POST(req: Request) {
 
     if (stateError) {
       console.error("Day game state creation error:", stateError);
-      await supabase.from("traitors_day_sessions").delete().eq("id", session.id);
+      await db.from("traitors_day_sessions").delete().eq("id", session.id);
       return NextResponse.json({ error: "Failed to create game state" }, { status: 500 });
     }
 

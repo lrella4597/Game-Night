@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { mergePackParts } from "@/lib/chat/customizeTodayParts";
 import { generatePackParts } from "@/lib/chat/generatePack";
 
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
 
     // Auth check
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const {
       data: { user },
       error: authError,
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
     // Add what players said about themselves when they joined (host's own game only)
     let fullMessage = message;
     if (typeof sessionId === "string" && sessionId) {
-      fullMessage += await playersBlock(supabase, sessionId, user.id);
+      fullMessage += await playersBlock(db, sessionId, user.id);
     }
 
     const started = Date.now();
@@ -85,18 +87,18 @@ export async function POST(req: NextRequest) {
 
 // "Players, in their own words" section for the AI, from the lobby answers.
 async function playersBlock(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  db: ReturnType<typeof dataClient>,
   sessionId: string,
   hostId: string
 ): Promise<string> {
-  const { data: session } = await supabase
+  const { data: session } = await db
     .from("traitors_day_sessions")
     .select("host_id")
     .eq("id", sessionId)
     .maybeSingle();
   if (!session || session.host_id !== hostId) return "";
 
-  const { data: players, error } = await supabase
+  const { data: players, error } = await db
     .from("traitors_day_players")
     .select("display_name, profile")
     .eq("session_id", sessionId)

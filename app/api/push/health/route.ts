@@ -21,6 +21,8 @@ export async function GET() {
   }
 
   return NextResponse.json({
+    // Server database key for the security lockdown (yes/no only)
+    adminKeySet: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     publicKeySet: publicKey.length > 0,
     privateKeySet: privateKey.length > 0,
     privateKeyValid,

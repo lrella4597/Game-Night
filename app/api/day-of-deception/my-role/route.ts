@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { verifyPlayer } from "@/lib/day-of-deception/playerAuth";
 
 export async function GET(req: Request) {
@@ -14,11 +15,12 @@ export async function GET(req: Request) {
     }
 
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const auth = await verifyPlayer(supabase, sessionId, playerId, token);
     if (!auth.ok) return auth.response;
 
     // Fetch this player's role
-    const { data: player, error } = await supabase
+    const { data: player, error } = await db
       .from("traitors_day_players")
       .select("id, role, display_name")
       .eq("id", playerId)
@@ -36,7 +38,7 @@ export async function GET(req: Request) {
 
     // If deceiver, also return fellow deceiver IDs + names
     if (player.role === "traitor") {
-      const { data: fellowDeceivers } = await supabase
+      const { data: fellowDeceivers } = await db
         .from("traitors_day_players")
         .select("id, display_name")
         .eq("session_id", sessionId)

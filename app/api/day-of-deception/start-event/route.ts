@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { getRandomEvent } from "@/lib/day-of-deception/events";
 import { sendPushToSession } from "@/lib/push";
 
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const {
       data: { user },
       error: authError,
@@ -18,7 +20,7 @@ export async function POST(req: Request) {
     const { sessionId, eventTemplate } = await req.json();
 
     // Verify host owns session + fetch custom event pack
-    const { data: session } = await supabase
+    const { data: session } = await db
       .from("traitors_day_sessions")
       .select("*")
       .eq("id", sessionId)
@@ -29,7 +31,7 @@ export async function POST(req: Request) {
     }
 
     // Get current game state to exclude current event from random selection
-    const { data: gameState } = await supabase
+    const { data: gameState } = await db
       .from("traitors_day_game_state")
       .select("current_event_index, current_event_template")
       .eq("session_id", sessionId)
@@ -78,7 +80,7 @@ export async function POST(req: Request) {
     const newEventIndex = (gameState?.current_event_index ?? 0) + 1;
 
     // Update game state
-    await supabase
+    await db
       .from("traitors_day_game_state")
       .update({
         phase: "event_active",
@@ -90,7 +92,7 @@ export async function POST(req: Request) {
       })
       .eq("session_id", sessionId);
 
-    await sendPushToSession(supabase, sessionId, {
+    await sendPushToSession(db, sessionId, {
       title: `📣 New Event: ${event.name}`,
       body: "Check your phone — a group event has started!",
       tag: "event",
