@@ -11,7 +11,10 @@ import {
 
 // Each piece must finish well inside the hosting platform's request limit, so
 // the host gets a clear error from us rather than a generic platform timeout.
-const PART_TIMEOUT_MS = 9000;
+// Pieces normally finish in ~6s. One that runs past this is dropped and the
+// pack is returned without it, rather than the whole request hitting the
+// platform's ~10s limit and failing.
+const PART_TIMEOUT_MS = 7500;
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,8 +52,8 @@ export async function POST(req: NextRequest) {
           {
             model: PACK_PART_MODEL,
             max_tokens: part.maxTokens,
-            // Speed matters more than deliberation here: no thinking, low effort
-            thinking: { type: "disabled" },
+            // No thinking and low effort keep each piece fast enough
+            thinking: { type: "between_tools" } as unknown as Anthropic.ThinkingConfigParam,
             system: PART_SYSTEM_PROMPT,
             output_config: {
               effort: "low",

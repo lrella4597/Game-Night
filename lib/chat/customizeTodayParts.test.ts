@@ -10,8 +10,8 @@ const event = (name: string) => ({
 test("merges parts and renumbers ids", () => {
   const pack = mergePackParts({
     summary: { assistant_message: "Hi", context_summary: { theme: "bbq", setting: "yard", playerCount: 12, additionalNotes: "", conversationHistory: "" } },
-    "missions-social-low": { mission_pack: [mission("a"), mission("b")] },
-    "missions-sneaky-high": { mission_pack: [mission("c")] },
+    "missions-social-0": { mission_pack: [mission("a"), mission("b")] },
+    "missions-sneaky-8": { mission_pack: [mission("c")] },
     "events-active": { event_pack: [event("x")] },
     "events-debate": { event_pack: [event("y")] },
   });
@@ -22,14 +22,14 @@ test("merges parts and renumbers ids", () => {
 
 test("works without the summary part", () => {
   const pack = mergePackParts({
-    "missions-social-low": { mission_pack: [mission("a")] },
+    "missions-social-0": { mission_pack: [mission("a")] },
     "events-active": { event_pack: [event("x")] },
   });
   assert.match(pack.assistant_message, /1 Deceiver missions and 1 group events/);
 });
 
 test("fails when there are no missions or no events", () => {
-  assert.throws(() => mergePackParts({ "missions-social-low": { mission_pack: [mission("a")] } }));
+  assert.throws(() => mergePackParts({ "missions-social-0": { mission_pack: [mission("a")] } }));
 });
 
 test("part prompt keeps the safety rules but not the whole-pack format", () => {
