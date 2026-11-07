@@ -5,12 +5,15 @@
 -- Safe to run more than once. Only adds things; changes no existing data.
 
 -- 1. Live updates straight from the database.
---    Players' and hosts' screens listen to changes on these tables, so the
---    game keeps moving even when the host's phone is asleep.
+--    Screens listen to changes on the game state table, so the game keeps
+--    moving even when the host's phone is asleep. Only this table is
+--    published: live changes carry whole rows, and the players and missions
+--    tables would reveal who the Deceivers are. Changes to those tables bump
+--    game_state.updated_at instead (see below).
 DO $$
 DECLARE t text;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['traitors_day_game_state', 'traitors_day_players', 'traitors_day_missions'] LOOP
+  FOREACH t IN ARRAY ARRAY['traitors_day_game_state'] LOOP
     IF NOT EXISTS (
       SELECT 1 FROM pg_publication_tables
       WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = t
@@ -19,6 +22,27 @@ BEGIN
     END IF;
   END LOOP;
 END $$;
+
+-- 1b. Any change to a game's players or missions touches its game_state row,
+--     which is what screens listen to.
+CREATE OR REPLACE FUNCTION dod_touch_game_state() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  UPDATE traitors_day_game_state
+    SET updated_at = NOW()
+    WHERE session_id = COALESCE(NEW.session_id, OLD.session_id);
+  RETURN NULL;
+END $$;
+
+DROP TRIGGER IF EXISTS dod_players_touch ON traitors_day_players;
+CREATE TRIGGER dod_players_touch
+  AFTER INSERT OR UPDATE OR DELETE ON traitors_day_players
+  FOR EACH ROW EXECUTE FUNCTION dod_touch_game_state();
+
+DROP TRIGGER IF EXISTS dod_missions_touch ON traitors_day_missions;
+CREATE TRIGGER dod_missions_touch
+  AFTER INSERT OR UPDATE OR DELETE ON traitors_day_missions
+  FOR EACH ROW EXECUTE FUNCTION dod_touch_game_state();
 
 -- 2. Automatic missions: fast lookup of the latest mission per game.
 CREATE INDEX IF NOT EXISTS traitors_day_missions_session_created_idx

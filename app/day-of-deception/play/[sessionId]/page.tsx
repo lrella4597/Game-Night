@@ -343,12 +343,9 @@ export default function TraitorsDayPlayerPage() {
   // Live updates straight from the database: the game moves forward for
   // players even when the host's screen is asleep, and automatic missions
   // show up the moment the server sends them.
-  useGameChanges(playerId ? sessionId : null, (table) => {
-    if (table === "traitors_day_missions") {
-      if (myRole === "traitor") fetchMissions();
-      return;
-    }
+  useGameChanges(playerId ? sessionId : null, () => {
     syncState();
+    if (myRole === "traitor") fetchMissions();
   });
 
   useEffect(() => {

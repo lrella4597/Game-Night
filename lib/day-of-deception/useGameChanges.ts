@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-type Table = "traitors_day_game_state" | "traitors_day_players" | "traitors_day_missions";
+type Table = "traitors_day_game_state";
 
 /**
- * Calls onChange whenever this game's rows change in the database.
+ * Calls onChange whenever this game changes in the database. Only the game
+ * state row is listened to (players and missions would reveal roles); a
+ * database trigger touches it whenever players or missions change.
  *
  * The database is the source of truth, so screens stay in sync no matter who
  * made the change (the host, a player, or the automatic mission timer) and
@@ -19,7 +21,7 @@ type Table = "traitors_day_game_state" | "traitors_day_players" | "traitors_day_
 export function useGameChanges(
   sessionId: string | null | undefined,
   onChange: (table: Table) => void,
-  { tables = ["traitors_day_game_state", "traitors_day_players", "traitors_day_missions"] as Table[], fallbackMs = 60_000 } = {}
+  { tables = ["traitors_day_game_state"] as Table[], fallbackMs = 60_000 } = {}
 ) {
   const onChangeRef = useRef(onChange);
   useEffect(() => {

@@ -190,17 +190,14 @@ export default function TraitorsDayHostPage() {
 
   // Database changes (joins, votes, profiles, automatic missions) refresh the
   // host's view even if no one broadcast them.
-  useGameChanges(loading ? null : sessionId, async (table) => {
-    if (table === "traitors_day_players") {
-      fetchPlayersRef.current();
-    } else {
-      const { data: gsRow } = await supabase
-        .from("traitors_day_game_state")
-        .select("missions_sent_count")
-        .eq("session_id", sessionId)
-        .single();
-      if (gsRow) setMissionsSent(gsRow.missions_sent_count ?? 0);
-    }
+  useGameChanges(loading ? null : sessionId, async () => {
+    fetchPlayersRef.current();
+    const { data: gsRow } = await supabase
+      .from("traitors_day_game_state")
+      .select("missions_sent_count")
+      .eq("session_id", sessionId)
+      .single();
+    if (gsRow) setMissionsSent(gsRow.missions_sent_count ?? 0);
   });
 
   // ── Realtime listeners ────────────────────────────────────────────────────
