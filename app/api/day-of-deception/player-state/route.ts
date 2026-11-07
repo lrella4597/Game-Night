@@ -142,6 +142,7 @@ export async function GET(req: Request) {
       .eq("id", playerId);
 
     return NextResponse.json({
+      finished: session.status === "finished" || session.status === "cancelled" || phase === "end",
       phase,
       players: players.map((p) => ({
         id: p.id,

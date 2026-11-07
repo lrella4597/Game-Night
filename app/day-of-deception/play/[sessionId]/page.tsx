@@ -17,7 +17,7 @@ import DayPlayerEnd from "@/app/components/day-of-deception/player/DayPlayerEnd"
 import type { DayPhase, PlayerRole, DayMission } from "@/lib/day-of-deception/types";
 import HowToPlayModal from "@/app/components/HowToPlayModal";
 import { usePushNotifications } from "@/lib/usePushNotifications";
-import { loadPlayer, clearPlayer } from "@/lib/day-of-deception/playerStorage";
+import { loadPlayer, clearPlayer, forgetLastSession } from "@/lib/day-of-deception/playerStorage";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyPayload = any;
@@ -238,13 +238,16 @@ export default function TraitorsDayPlayerPage() {
     try {
       const params = new URLSearchParams({ sessionId, playerId, token: playerToken });
       const res = await fetch(`/api/day-of-deception/player-state?${params}`, { cache: "no-store" });
-      if (res.status === 410 || res.status === 403) {
+      // Kicked, bad token, or the game no longer exists
+      if (res.status === 410 || res.status === 403 || res.status === 404) {
         clearPlayer(sessionId);
         router.replace("/day-of-deception/play");
         return;
       }
       if (!res.ok) return;
       const s = await res.json();
+      // Game is over: opening the app next time should go to the join screen
+      if (s.finished) forgetLastSession(sessionId);
 
       setPhase(s.phase);
       setPlayers(s.players);

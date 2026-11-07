@@ -68,6 +68,16 @@ export function clearPlayer(sessionId: string) {
   }, undefined);
 }
 
+/** Stop auto-opening this game on launch (it ended), but keep the player so
+ *  the end screen still works if they follow a link back to it. */
+export function forgetLastSession(sessionId: string) {
+  safe(() => {
+    if (localStorage.getItem(LAST_SESSION_KEY) === sessionId) {
+      localStorage.removeItem(LAST_SESSION_KEY);
+    }
+  }, undefined);
+}
+
 /** The game this device last joined, if the player is still stored for it. */
 export function getLastSessionId(): string | null {
   const sessionId = safe(() => localStorage.getItem(LAST_SESSION_KEY), null);
