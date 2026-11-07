@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 
 // The signed-in player's current game, if any. Lets a phone with no saved
 // game (new phone, home screen app, cleared browser) drop straight back in
@@ -7,12 +8,13 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET() {
   try {
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ game: null });
 
-    const { data: rows } = await supabase
+    const { data: rows } = await db
       .from("traitors_day_players")
       .select("id, display_name, session_id, joined_at, traitors_day_sessions!inner(status)")
       .eq("user_id", user.id)

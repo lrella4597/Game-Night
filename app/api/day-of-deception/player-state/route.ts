@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { verifyPlayer } from "@/lib/day-of-deception/playerAuth";
 import { resolveVotes } from "@/lib/day-of-deception/winCondition";
 import { EVENT_TEMPLATES } from "@/lib/day-of-deception/events";
@@ -18,19 +19,20 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const auth = await verifyPlayer(supabase, sessionId, playerId, token);
     if (!auth.ok) return auth.response;
 
     const [{ data: session }, { data: gs }, { data: rows }] = await Promise.all([
-      supabase
+      db
         .from("traitors_day_sessions")
         // "*" so a column missing from the live database (e.g. event_pack)
         // can't make the whole query fail
         .select("*")
         .eq("id", sessionId)
         .single(),
-      supabase.from("traitors_day_game_state").select("*").eq("session_id", sessionId).single(),
-      supabase
+      db.from("traitors_day_game_state").select("*").eq("session_id", sessionId).single(),
+      db
         .from("traitors_day_players")
         .select("id, display_name, avatar_color, is_connected, shadow_tokens, role, vote_target_id, vote_locked")
         .eq("session_id", sessionId)
@@ -50,7 +52,7 @@ export async function GET(req: Request) {
 
     // Has this player answered the "about you" questions? Separate query so a
     // database without the profile column doesn't break the whole check.
-    const { data: profileRow } = await supabase
+    const { data: profileRow } = await db
       .from("traitors_day_players")
       .select("profile")
       .eq("id", playerId)
@@ -148,7 +150,7 @@ export async function GET(req: Request) {
     // Mark this player as back online. Only when it changes: every write to
     // the players table is pushed to every screen in the game.
     if (!me.is_connected) {
-      await supabase
+      await db
         .from("traitors_day_players")
         .update({ is_connected: true, last_seen_at: new Date().toISOString() })
         .eq("id", playerId);

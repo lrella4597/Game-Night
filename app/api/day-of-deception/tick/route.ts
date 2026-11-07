@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendMission } from "@/lib/day-of-deception/missionSender";
+import { adminClient } from "@/lib/supabase/admin";
 
 // Automatic missions. Called every few minutes by the scheduled function in
 // netlify/functions/dod-tick.mts. For each game that's underway with a mission
@@ -18,11 +19,11 @@ const MAX_GAME_AGE_MS = 24 * 60 * 60 * 1000;
 const GRACE_MS = 60 * 1000;
 
 async function tick() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  );
+  const supabase =
+    adminClient() ??
+    createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      auth: { persistSession: false },
+    });
   const now = Date.now();
 
   const { data: sessions, error } = await supabase

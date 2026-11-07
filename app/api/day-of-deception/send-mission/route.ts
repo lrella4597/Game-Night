@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { sendMission } from "@/lib/day-of-deception/missionSender";
 
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const {
       data: { user },
       error: authError,
@@ -17,7 +19,7 @@ export async function POST(req: Request) {
     const { sessionId, playerId: requestedPlayerId } = await req.json();
 
     // Verify host owns session + fetch custom mission pack
-    const { data: session } = await supabase
+    const { data: session } = await db
       .from("traitors_day_sessions")
       .select("*")
       .eq("id", sessionId)
@@ -28,7 +30,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      const sent = await sendMission(supabase, session, requestedPlayerId);
+      const sent = await sendMission(db, session, requestedPlayerId);
       return NextResponse.json(sent);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to send mission";

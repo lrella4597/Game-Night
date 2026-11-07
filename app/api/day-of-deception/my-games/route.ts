@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 
 // Every unfinished Day of Deception game the signed-in account is in, as a
 // player or as the host, so they can jump back into any of them.
@@ -8,6 +9,7 @@ const RECENT_DAYS = 3;
 export async function GET() {
   try {
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -16,7 +18,7 @@ export async function GET() {
     const since = new Date(Date.now() - RECENT_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
     const [{ data: playerRows }, { data: hostRows }] = await Promise.all([
-      supabase
+      db
         .from("traitors_day_players")
         .select("id, display_name, session_id, joined_at, traitors_day_sessions!inner(status, join_code, created_at)")
         .eq("user_id", user.id)
@@ -24,7 +26,7 @@ export async function GET() {
         .gte("traitors_day_sessions.created_at", since)
         .order("joined_at", { ascending: false })
         .limit(10),
-      supabase
+      db
         .from("traitors_day_sessions")
         .select("id, join_code, status, created_at")
         .eq("host_id", user.id)

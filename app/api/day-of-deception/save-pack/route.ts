@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const {
       data: { user },
       error: authError,
@@ -24,7 +26,7 @@ export async function POST(req: Request) {
     }
 
     // Verify host owns session
-    const { data: session } = await supabase
+    const { data: session } = await db
       .from("traitors_day_sessions")
       .select("id, host_id")
       .eq("id", sessionId)
@@ -34,7 +36,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("traitors_day_sessions")
       .update({
         mission_pack: missionPack,

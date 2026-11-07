@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { normalizeJoinCode, isValidJoinCode } from "@/lib/live/joinCodeUtils";
 import { PLAYER_COLORS } from "@/lib/live/types";
 
@@ -21,6 +22,7 @@ export async function POST(req: Request) {
     }
 
     const supabase = await createClient();
+    const db = dataClient(supabase);
 
     const {
       data: { user },
@@ -29,7 +31,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Sign in to join the game" }, { status: 401 });
     }
 
-    const { data: session, error: sessionError } = await supabase
+    const { data: session, error: sessionError } = await db
       .from("traitors_day_sessions")
       .select("id, status, max_players")
       .eq("join_code", joinCode)
@@ -40,7 +42,7 @@ export async function POST(req: Request) {
     }
 
     // Already in this game with this account: hand the player back
-    const { data: mine } = await supabase
+    const { data: mine } = await db
       .from("traitors_day_players")
       .select("id, display_name")
       .eq("session_id", session.id)
@@ -51,7 +53,7 @@ export async function POST(req: Request) {
       if (session.status === "finished" || session.status === "cancelled") {
         return NextResponse.json({ error: "This game has ended." }, { status: 400 });
       }
-      await supabase
+      await db
         .from("traitors_day_players")
         .update({ is_connected: true, last_seen_at: new Date().toISOString() })
         .eq("id", mine.id);
@@ -85,7 +87,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Display name is required" }, { status: 400 });
     }
 
-    const { count } = await supabase
+    const { count } = await db
       .from("traitors_day_players")
       .select("id", { count: "exact", head: true })
       .eq("session_id", session.id);
@@ -94,7 +96,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "This game is full." }, { status: 400 });
     }
 
-    const { data: nameTaken } = await supabase
+    const { data: nameTaken } = await db
       .from("traitors_day_players")
       .select("id")
       .eq("session_id", session.id)
@@ -108,7 +110,7 @@ export async function POST(req: Request) {
     const colorIndex = (count ?? 0) % PLAYER_COLORS.length;
     const avatarColor = PLAYER_COLORS[colorIndex];
 
-    const { data: player, error: playerError } = await supabase
+    const { data: player, error: playerError } = await db
       .from("traitors_day_players")
       .insert({
         session_id: session.id,

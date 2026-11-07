@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { sendPush } from "@/lib/push";
 
 export async function POST(req: Request) {
@@ -11,6 +12,7 @@ export async function POST(req: Request) {
     }
 
     const supabase = await createClient();
+    const db = dataClient(supabase);
 
     const record = {
       player_id: playerId,
@@ -22,7 +24,7 @@ export async function POST(req: Request) {
     };
 
     // Is this phone already signed up for this player in this game?
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from("push_subscriptions")
       .select("endpoint")
       .eq("player_id", playerId)
@@ -30,7 +32,7 @@ export async function POST(req: Request) {
       .maybeSingle();
     const isNew = existing?.endpoint !== subscription.endpoint;
 
-    const { error } = await supabase
+    const { error } = await db
       .from("push_subscriptions")
       .upsert({ ...record, updated_at: new Date().toISOString() }, { onConflict: "player_id,session_id" });
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { dataClient } from "@/lib/supabase/admin";
 
 // Checks that the request really comes from this player.
 //
@@ -19,7 +20,11 @@ export async function verifyPlayer(
 
   if (token !== `${playerId}:${sessionId}`) return fail("Invalid token", 403);
 
-  let { data: player, error } = await supabase
+  // Data reads go through the admin client (when configured); the sign-in
+  // check below must use the player's own client.
+  const db = dataClient(supabase);
+
+  let { data: player, error } = await db
     .from("traitors_day_players")
     .select("id, user_id")
     .eq("id", playerId)
@@ -29,7 +34,7 @@ export async function verifyPlayer(
   // Database not migrated yet (no user_id column): fall back to the old check
   // rather than locking everyone out.
   if (error) {
-    const fallback = await supabase
+    const fallback = await db
       .from("traitors_day_players")
       .select("id")
       .eq("id", playerId)

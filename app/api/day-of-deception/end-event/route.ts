@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const {
       data: { user },
       error: authError,
@@ -16,7 +18,7 @@ export async function POST(req: Request) {
     const { sessionId } = await req.json();
 
     // Verify host owns session
-    const { data: session } = await supabase
+    const { data: session } = await db
       .from("traitors_day_sessions")
       .select("id, host_id")
       .eq("id", sessionId)
@@ -27,7 +29,7 @@ export async function POST(req: Request) {
     }
 
     // Update game state
-    await supabase
+    await db
       .from("traitors_day_game_state")
       .update({
         phase: "freeplay",

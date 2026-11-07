@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { dataClient } from "@/lib/supabase/admin";
 import { verifyPlayer } from "@/lib/day-of-deception/playerAuth";
 
 export async function POST(req: Request) {
@@ -11,11 +12,12 @@ export async function POST(req: Request) {
     }
 
     const supabase = await createClient();
+    const db = dataClient(supabase);
     const auth = await verifyPlayer(supabase, sessionId, playerId, token);
     if (!auth.ok) return auth.response;
 
     // Verify mission belongs to this player
-    const { data: mission, error: missionError } = await supabase
+    const { data: mission, error: missionError } = await db
       .from("traitors_day_missions")
       .select("id, player_id, is_completed")
       .eq("id", missionId)
@@ -35,7 +37,7 @@ export async function POST(req: Request) {
     }
 
     // Mark mission as completed
-    await supabase
+    await db
       .from("traitors_day_missions")
       .update({
         is_completed: true,
@@ -47,7 +49,7 @@ export async function POST(req: Request) {
       .eq("session_id", sessionId);
 
     // Award +1 shadow token to the player
-    const { data: player } = await supabase
+    const { data: player } = await db
       .from("traitors_day_players")
       .select("shadow_tokens")
       .eq("id", playerId)
@@ -56,7 +58,7 @@ export async function POST(req: Request) {
 
     const newTokenCount = (player?.shadow_tokens ?? 0) + 1;
 
-    await supabase
+    await db
       .from("traitors_day_players")
       .update({ shadow_tokens: newTokenCount })
       .eq("id", playerId)
