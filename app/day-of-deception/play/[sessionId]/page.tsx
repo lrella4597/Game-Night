@@ -127,6 +127,7 @@ export default function TraitorsDayPlayerPage() {
     subscribe: subscribePush,
     supported: pushSupported,
     needsInstall: pushNeedsInstall,
+    error: pushError,
   } = usePushNotifications({ playerId: playerId || "", sessionId });
   const [pushPromptDismissed, setPushPromptDismissed] = useState(false);
 
@@ -439,7 +440,9 @@ export default function TraitorsDayPlayerPage() {
       <span className="text-2xl">🔔</span>
       <div className="flex-1 min-w-0">
         <p className="text-white text-sm font-semibold">Enable notifications</p>
-        <p className="text-white/50 text-xs">Get secret alerts even when your phone is locked</p>
+        <p className={pushError ? "text-red-400 text-xs" : "text-white/50 text-xs"}>
+          {pushError ?? "Get secret alerts even when your phone is locked"}
+        </p>
       </div>
       <button
         onClick={subscribePush}
