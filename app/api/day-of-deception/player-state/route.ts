@@ -24,7 +24,9 @@ export async function GET(req: Request) {
     const [{ data: session }, { data: gs }, { data: rows }] = await Promise.all([
       supabase
         .from("traitors_day_sessions")
-        .select("id, status, max_token_vote_bonus, event_pack")
+        // "*" so a column missing from the live database (e.g. event_pack)
+        // can't make the whole query fail
+        .select("*")
         .eq("id", sessionId)
         .single(),
       supabase.from("traitors_day_game_state").select("*").eq("session_id", sessionId).single(),
