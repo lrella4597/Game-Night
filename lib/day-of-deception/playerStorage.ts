@@ -78,6 +78,23 @@ export function forgetLastSession(sessionId: string) {
   }, undefined);
 }
 
+// Guard against redirect loops between the join page and the game page.
+// Each automatic "send them back into their game" is recorded; if it happens
+// more than twice in 30 seconds, stop and let the player tap a button instead.
+const RESUME_LOG_KEY = "day-of-deception-auto-resume";
+
+export function allowAutoResume(): boolean {
+  return safe(() => {
+    const now = Date.now();
+    const recent = (JSON.parse(sessionStorage.getItem(RESUME_LOG_KEY) || "[]") as number[]).filter(
+      (t) => now - t < 30_000
+    );
+    if (recent.length >= 2) return false;
+    sessionStorage.setItem(RESUME_LOG_KEY, JSON.stringify([...recent, now]));
+    return true;
+  }, true);
+}
+
 /** The game this device last joined, if the player is still stored for it. */
 export function getLastSessionId(): string | null {
   const sessionId = safe(() => localStorage.getItem(LAST_SESSION_KEY), null);

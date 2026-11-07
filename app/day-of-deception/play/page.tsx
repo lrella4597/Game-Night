@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import AuthModal from "@/app/components/auth/AuthModal";
-import { getLastSessionId, savePlayer } from "@/lib/day-of-deception/playerStorage";
+import { allowAutoResume, getLastSessionId, savePlayer } from "@/lib/day-of-deception/playerStorage";
 
 function googleFirstName(meta: Record<string, unknown> | undefined): string {
   const full = (meta?.full_name as string) || (meta?.name as string) || (meta?.display_name as string) || "";
@@ -34,7 +34,7 @@ function JoinForm() {
   useEffect(() => {
     const last = getLastSessionId();
     if (!last) return;
-    if (!prefillCode && !needsSignIn) {
+    if (!prefillCode && !needsSignIn && allowAutoResume()) {
       router.replace(`/day-of-deception/play/${last}`);
     } else {
       setLastSessionId(last);
@@ -48,7 +48,8 @@ function JoinForm() {
     // Signed back in on a phone that already knows its game
     const last = getLastSessionId();
     if (last) {
-      if (needsSignIn) router.replace(`/day-of-deception/play/${last}`);
+      if (needsSignIn && allowAutoResume()) router.replace(`/day-of-deception/play/${last}`);
+      else setLastSessionId(last);
       return;
     }
     let cancelled = false;
@@ -62,7 +63,8 @@ function JoinForm() {
           playerName: game.playerName,
           playerToken: game.playerToken,
         });
-        router.replace(`/day-of-deception/play/${game.sessionId}`);
+        if (allowAutoResume()) router.replace(`/day-of-deception/play/${game.sessionId}`);
+        else setLastSessionId(game.sessionId);
       })
       .catch(() => {})
       .finally(() => !cancelled && setCheckingGame(false));
