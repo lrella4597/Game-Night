@@ -33,12 +33,12 @@ const KIND_ICON: Record<Clue["kind"], IconName> = { cleared: "shield", lineup: "
 
 function sourceLine(c: Clue): string {
   if (c.source === "event") return c.sourceLabel ? `Won in ${c.sourceLabel}` : "Won in an event";
-  if (c.source === "public") return "Everyone got this. A Deceiver missed a mission.";
-  return "Anonymous tip. Real, or planted by a Deceiver.";
+  if (c.source === "public") return "Everyone got this. A Traitor missed a mission.";
+  return "Anonymous tip. Real, or planted by a Traitor.";
 }
 
 /**
- * The player's secret clues, plus (for Deceivers) the fake tip sender. Clues
+ * The player's secret clues, plus (for Traitors) the fake tip sender. Clues
  * are private: what you share at the Roundtable is up to you.
  */
 export default function DayPlayerClues({ sessionId, playerId, playerToken, role, players, refreshKey }: DayPlayerCluesProps) {
@@ -115,7 +115,7 @@ export function CluesView({
         <Card className="py-7 text-center">
           <p className="text-[15px] text-white/60">No clues yet.</p>
           <p className="mt-1 text-sm text-white/35">
-            {isDeceiver ? "You can win them too. Use them to look Loyal." : "Win an event to earn your first one."}
+            {isDeceiver ? "You can win them too. Use them to look Faithful." : "Win an event to earn your first one."}
           </p>
         </Card>
       ) : (
@@ -292,8 +292,8 @@ function FakeTipForm({
       </div>
       <p className="mt-2 text-xs text-white/40">
         {mode === "frame"
-          ? "They'll read: “One of [them] and two others is a Deceiver.”"
-          : "They'll read: “[Name] is Loyal.” You can clear yourself."}
+          ? "They'll read: “One of [them] and two others is a Traitor.”"
+          : "They'll read: “[Name] is Faithful.” You can clear yourself."}
       </p>
 
       <p className="mb-2 mt-5 text-xs font-medium uppercase tracking-[0.18em] text-white/45">

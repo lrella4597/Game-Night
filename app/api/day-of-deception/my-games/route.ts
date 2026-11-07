@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { dataClient } from "@/lib/supabase/admin";
 
-// Every unfinished Day of Deception game the signed-in account is in, as a
+// Every unfinished Traitors game the signed-in account is in, as a
 // player or as the host, so they can jump back into any of them.
 const RECENT_DAYS = 3;
 

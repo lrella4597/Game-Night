@@ -43,7 +43,7 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
   const [cadence, setCadence] = useState<string>(config.missionCadence);
   const [savingCadence, setSavingCadence] = useState(false);
 
-  // How often the server automatically sends Deceivers a new mission
+  // How often the server automatically sends Traitors a new mission
   async function handleCadenceChange(value: string) {
     const previous = cadence;
     setCadence(value);
@@ -93,7 +93,7 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
 
   const canStart = players.length >= 1;
   const settings: [string, string][] = [
-    ["Deceivers", String(config.deceiverCount)],
+    ["Traitors", String(config.deceiverCount)],
     ["Discussion", `${config.discussionTimerMinutes} min`],
     ["Voting", `${config.votingTimerSeconds} sec`],
     ["Max players", String(config.maxPlayers)],
@@ -176,7 +176,7 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
             <label className="mt-4 flex items-center justify-between gap-4">
               <span>
                 <span className="block text-[15px] text-white/85">Automatic missions</span>
-                <span className="block text-xs text-white/40">Sent to Deceivers all day</span>
+                <span className="block text-xs text-white/40">Sent to Traitors all day</span>
               </span>
               <select
                 value={cadence}

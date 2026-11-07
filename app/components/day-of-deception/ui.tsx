@@ -1,8 +1,8 @@
 "use client";
 
-// Day of Deception design kit. Every screen builds from these so the whole
+// Traitors design kit. Every screen builds from these so the whole
 // game looks like one product: ink background, serif headlines, gold for
-// actions and clues, emerald for Loyal, crimson for Deceivers.
+// actions and clues, emerald for Faithful, crimson for Traitors.
 
 import React from "react";
 

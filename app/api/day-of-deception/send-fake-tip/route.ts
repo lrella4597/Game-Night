@@ -4,9 +4,9 @@ import { dataClient } from "@/lib/supabase/admin";
 import { verifyPlayer } from "@/lib/day-of-deception/playerAuth";
 import { buildFakeClue, fakeTipsAvailable, sendFakeClue } from "@/lib/day-of-deception/clues";
 
-// A Deceiver spends a completed mission on a fake anonymous tip:
-//   clear: "<target> is Loyal."
-//   frame: "One of <target>, <two Loyal players> is a Deceiver."
+// A Traitor spends a completed mission on a fake anonymous tip:
+//   clear: "<target> is Faithful."
+//   frame: "One of <target>, <two Faithful players> is a Traitor."
 export async function POST(req: Request) {
   try {
     const { sessionId, playerId, token, recipientId, mode, targetId } = await req.json();
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     ]);
     const me = players?.find((p) => p.id === playerId);
     if (!me || me.role !== "traitor") {
-      return NextResponse.json({ error: "Only Deceivers can send fake tips" }, { status: 403 });
+      return NextResponse.json({ error: "Only Traitors can send fake tips" }, { status: 403 });
     }
     if (!gs || !["freeplay", "event_active", "roundtable"].includes(gs.phase)) {
       return NextResponse.json({ error: "Fake tips are closed right now" }, { status: 400 });

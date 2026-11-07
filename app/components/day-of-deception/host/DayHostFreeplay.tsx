@@ -171,9 +171,9 @@ export default function DayHostFreeplay({
           )}
         </ActionCard>
 
-        <ActionCard icon="send" title="Mission" body="Missions also go out automatically. Send one now to keep the Deceivers busy.">
+        <ActionCard icon="send" title="Mission" body="Missions also go out automatically. Send one now to keep the Traitors busy.">
           <Button full variant="secondary" onClick={() => handleSendMission()} disabled={sendingMission}>
-            {sendingMission ? "Sending" : "Send to a Deceiver"}
+            {sendingMission ? "Sending" : "Send to a Traitor"}
           </Button>
           <Button full variant="ghost" onClick={() => setShowPlayerMission((s) => !s)}>
             Pick who gets it

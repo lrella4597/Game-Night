@@ -21,9 +21,9 @@ export type DaySessionStatus = "lobby" | "active" | "finished" | "cancelled";
 export type PlayerRole = "traitor" | "faithful";
 
 // Display names for UI (DB values stay as traitor/faithful)
-export const ROLE_DISPLAY: Record<string, string> = { traitor: "Deceiver", faithful: "Loyal" };
-export const ROLE_DISPLAY_UPPER: Record<string, string> = { traitor: "DECEIVER", faithful: "LOYAL" };
-export const WINNER_DISPLAY: Record<string, string> = { faithful: "Loyal", traitors: "Deceivers" };
+export const ROLE_DISPLAY: Record<string, string> = { traitor: "Traitor", faithful: "Faithful" };
+export const ROLE_DISPLAY_UPPER: Record<string, string> = { traitor: "TRAITOR", faithful: "FAITHFUL" };
+export const WINNER_DISPLAY: Record<string, string> = { faithful: "Faithful", traitors: "Traitors" };
 
 // ── Session Config ───────────────────────────────────────────────────────────
 

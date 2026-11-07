@@ -10,7 +10,7 @@ import {
   getCustomizeTodayUserMessage,
 } from "./customizeTodayPrompt.ts";
 
-test("Day of Deception always requests a complete JSON pack instead of prose clarification", () => {
+test("Traitors always requests a complete JSON pack instead of prose clarification", () => {
   assert.equal(
     CUSTOMIZE_TODAY_SYSTEM_PROMPT.toLowerCase().includes("ask 1-2 clarifying questions"),
     false
@@ -29,7 +29,7 @@ test("Day of Deception always requests a complete JSON pack instead of prose cla
   ]);
 });
 
-test("parses a structured Day of Deception pack", () => {
+test("parses a structured Traitors pack", () => {
   const response = parseCustomizeTodayResponse(
     JSON.stringify({
       assistant_message: "Your pack is ready.",

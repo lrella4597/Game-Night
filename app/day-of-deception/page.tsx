@@ -93,13 +93,11 @@ export default function TraitorsDayLandingPage() {
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
       <div className="text-center">
         <Eyebrow className="!text-[#E8C67A]">A game that lasts all day</Eyebrow>
-        <h1 className={`${display} mt-4 text-6xl leading-[0.95] text-white`}>
-          Day of
-          <br />
-          <span className="italic text-[#E8C67A]">Deception</span>
+        <h1 className={`${display} mt-4 text-7xl leading-none text-white`}>
+          <span className="italic text-[#E8C67A]">Traitors</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xs text-[15px] leading-relaxed text-white/55">
-          Some of your friends are secretly Deceivers. Find them before the day is out.
+          Some of your friends are secretly Traitors. Find them before the day is out.
         </p>
       </div>
 

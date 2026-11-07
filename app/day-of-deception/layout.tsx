@@ -11,12 +11,12 @@ const displayFont = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Day of Deception",
+  title: "Traitors",
   description: "All-day social deduction event",
   // iPhone home screen app: full screen, own icon and name
   appleWebApp: {
     capable: true,
-    title: "Deception",
+    title: "Traitors",
     statusBarStyle: "black-translucent",
   },
   icons: {
@@ -39,7 +39,7 @@ export default function TraitorsDayLayout({ children }: { children: React.ReactN
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E8C67A]/12 text-[#E8C67A] ring-1 ring-[#E8C67A]/25">
               <Icon name="mask" className="h-4 w-4" />
             </span>
-            <span className="font-[family-name:var(--font-display)] text-[19px] leading-none">Day of Deception</span>
+            <span className="font-[family-name:var(--font-display)] text-[19px] leading-none">Traitors</span>
           </Link>
           <Link
             href="/day-of-deception"

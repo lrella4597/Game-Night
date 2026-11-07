@@ -5,8 +5,8 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/day-of-deception/play",
-    name: "Day of Deception",
-    short_name: "Deception",
+    name: "Traitors",
+    short_name: "Traitors",
     description: "All-day social deduction game",
     // Opens straight into the player's current game, or the join screen
     start_url: "/day-of-deception/play",

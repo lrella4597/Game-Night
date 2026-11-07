@@ -25,7 +25,7 @@ test("works without the summary part", () => {
     "missions-social-0": { mission_pack: [mission("a")] },
     "events-active": { event_pack: [event("x")] },
   });
-  assert.match(pack.assistant_message, /1 Deceiver missions and 1 group events/);
+  assert.match(pack.assistant_message, /1 Traitor missions and 1 group events/);
 });
 
 test("fails when there are no missions or no events", () => {

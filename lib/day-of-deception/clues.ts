@@ -3,20 +3,20 @@ import { sendPushToPlayer, sendPushToSession } from "@/lib/push";
 
 // ── Clues ────────────────────────────────────────────────────────────────────
 // Clues are about the game, never about anyone's life:
-//   cleared      "Jess is Loyal."
-//   lineup       "One of Mike, Sarah or Tom is a Deceiver."
-//   mission_tip  "A Deceiver's mission was: get someone to compliment their shoes."
+//   cleared      "Jess is Faithful."
+//   lineup       "One of Mike, Sarah or Tom is a Traitor."
+//   mission_tip  "A Traitor's mission was: get someone to compliment their shoes."
 //
 // Pacing: real clues are pooled across every player (people share), and the
 // pool is never allowed to give the game away. Cleared clues stop while there
-// are fewer than 2 uncleared Loyal players per Deceiver, so pooling everything
-// still leaves about 3 suspects per Deceiver. Lineups always name 3 people
-// with exactly one Deceiver.
+// are fewer than 2 uncleared Faithful players per Traitor, so pooling everything
+// still leaves about 3 suspects per Traitor. Lineups always name 3 people
+// with exactly one Traitor.
 
 // A mission has this long to be completed before it expires and everyone
 // gets a public clue.
 export const MISSION_WINDOW_MS = 30 * 60 * 1000;
-// Mission tips only use missions old enough that the Deceiver has had time
+// Mission tips only use missions old enough that the Traitor has had time
 // to act on them, so there's something to remember.
 const TIP_MIN_AGE_MS = 10 * 60 * 1000;
 const LINEUP_SIZE = 3;
@@ -155,7 +155,7 @@ export function generateClue(ctx: ClueContext, recipientId: string | null): Gene
     const m = pick(tippable);
     return {
       kind,
-      text: `A Deceiver's secret mission was: "${m.mission_text}"`,
+      text: `A Traitor's secret mission was: "${m.mission_text}"`,
       subjectIds: [],
       missionId: m.id,
     };
@@ -163,11 +163,11 @@ export function generateClue(ctx: ClueContext, recipientId: string | null): Gene
 
   if (kind === "cleared") {
     const p = pick(clearable);
-    return { kind, text: `${p.display_name} is Loyal.`, subjectIds: [p.id], missionId: null };
+    return { kind, text: `${p.display_name} is Faithful.`, subjectIds: [p.id], missionId: null };
   }
 
-  // Lineup: one Deceiver (the one named in the fewest lineups so far) plus
-  // Loyal fillers. Reuse a filler from that Deceiver's last lineup when
+  // Lineup: one Traitor (the one named in the fewest lineups so far) plus
+  // Faithful fillers. Reuse a filler from that Traitor's last lineup when
   // possible, so two lineups can't be crossed to pin down one person.
   const lineupsFor = (id: string) =>
     real.filter((c) => c.kind === "lineup" && (c.subject_ids || []).includes(id));
@@ -187,7 +187,7 @@ export function generateClue(ctx: ClueContext, recipientId: string | null): Gene
   const subjectIds = shuffle([target.id, ...fillers]);
   return {
     kind: "lineup",
-    text: `One of ${nameList(subjectIds.map((id) => names[id]))} is a Deceiver.`,
+    text: `One of ${nameList(subjectIds.map((id) => names[id]))} is a Traitor.`,
     subjectIds,
     missionId: null,
   };
@@ -291,18 +291,18 @@ export async function releasePublicClue(db: Db, sessionId: string, missionId: st
       playerId: p.id,
       clue,
       source: "public" as const,
-      sourceLabel: "A Deceiver missed a mission",
+      sourceLabel: "A Traitor missed a mission",
     }))
   );
   await sendPushToSession(db, sessionId, {
-    title: "🔎 A Deceiver slacked off",
+    title: "🔎 A Traitor slacked off",
     body: "They missed a mission, so everyone gets a clue. Open the game.",
     tag: "public-clue",
   });
   return true;
 }
 
-/** Fake anonymous tip from a Deceiver. */
+/** Fake anonymous tip from a Traitor. */
 export function buildFakeClue(
   players: PlayerLite[],
   fromId: string,
@@ -312,9 +312,9 @@ export function buildFakeClue(
   const target = players.find((p) => p.id === targetId);
   if (!target) return null;
   if (mode === "clear") {
-    return { kind: "cleared", text: `${target.display_name} is Loyal.`, subjectIds: [target.id], missionId: null };
+    return { kind: "cleared", text: `${target.display_name} is Faithful.`, subjectIds: [target.id], missionId: null };
   }
-  // Frame: a lineup with the target and two random Loyal players, no Deceivers.
+  // Frame: a lineup with the target and two random Faithful players, no Traitors.
   // Reads exactly like a real lineup.
   const fillers = shuffle(
     players.filter((p) => p.role !== "traitor" && p.id !== targetId && p.id !== fromId)
@@ -322,7 +322,7 @@ export function buildFakeClue(
   const subjects = shuffle([target, ...fillers]);
   return {
     kind: "lineup",
-    text: `One of ${nameList(subjects.map((p) => p.display_name))} is a Deceiver.`,
+    text: `One of ${nameList(subjects.map((p) => p.display_name))} is a Traitor.`,
     subjectIds: subjects.map((p) => p.id),
     missionId: null,
   };
@@ -345,7 +345,7 @@ export async function sendFakeClue(
   });
 }
 
-/** Fake tips a Deceiver can still send: one per completed mission. */
+/** Fake tips a Traitor can still send: one per completed mission. */
 export async function fakeTipsAvailable(db: Db, sessionId: string, playerId: string): Promise<number> {
   const [{ count: done }, { count: sent }] = await Promise.all([
     db

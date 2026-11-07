@@ -15,7 +15,7 @@ interface SessionRow {
 }
 
 /**
- * Send one secret mission to a Deceiver: picks the Deceiver (the given one, or
+ * Send one secret mission to a Traitor: picks the Traitor (the given one, or
  * whoever has had the fewest missions), picks an unused mission from the
  * game's custom pack (or the built-in list), saves it and notifies them.
  * Used by the host's "Send mission" button and the automatic mission timer.
@@ -41,9 +41,9 @@ export async function sendMission(
       .select("id")
       .eq("session_id", sessionId)
       .eq("role", "traitor");
-    if (!traitors || traitors.length === 0) throw new Error("No deceivers found");
+    if (!traitors || traitors.length === 0) throw new Error("No Traitors found");
 
-    // Spread missions evenly: pick among the Deceivers with the fewest so far
+    // Spread missions evenly: pick among the Traitors with the fewest so far
     const counts = traitors.map((t) => ({
       id: t.id as string,
       n: existing.filter((m) => m.player_id === t.id).length,

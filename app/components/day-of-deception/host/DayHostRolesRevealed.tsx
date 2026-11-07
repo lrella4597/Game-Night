@@ -30,7 +30,7 @@ export default function DayHostRolesRevealed({ onBeginDay, playerCount }: DayHos
         </Title>
         <p className="mx-auto mt-5 max-w-sm text-[17px] leading-relaxed text-white/55">
           Everyone is checking their phone. When the room settles, start the day. Missions start flowing to the
-          Deceivers right away.
+          Traitors right away.
         </p>
         <Button size="lg" className="mt-10 min-w-56" onClick={handleBeginDay} disabled={starting}>
           {starting ? "Starting" : "Begin the day"}

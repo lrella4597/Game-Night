@@ -9,7 +9,7 @@ interface Section {
 }
 
 /**
- * "How to play" for Day of Deception: a small round button under the top
+ * "How to play" for Traitors: a small round button under the top
  * bar that opens a dark bottom sheet. Opens by itself the first time.
  */
 export default function DodHelp({ gameKey, title, sections }: { gameKey: string; title: string; sections: Section[] }) {

@@ -400,7 +400,7 @@ export default function TraitorsDayHostPage() {
         {
           title: "During the day",
           steps: [
-            "Missions go to Deceivers automatically. Each has 30 minutes, and a missed one gives everyone a clue",
+            "Missions go to Traitors automatically. Each has 30 minutes, and a missed one gives everyone a clue",
             "Run events whenever the group is together. When one ends, pick the winners: each gets a secret clue",
             "Your phone can sleep. The game keeps running without your screen",
           ],
@@ -409,7 +409,7 @@ export default function TraitorsDayHostPage() {
           title: "The Roundtable",
           steps: [
             "At the end of the day, start the Roundtable. People share (or fake) their clues",
-            "Start the vote, then reveal the result. Banish a Deceiver and the Loyal win",
+            "Start the vote, then reveal the result. Banish a Traitor and the Faithful win",
           ],
         },
       ]}

@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
     await sendPushToSession(db, sessionId, {
       title: "🎭 Your Role Has Been Assigned",
-      body: "Check your phone to see if you are Faithful or Deceiver!",
+      body: "Check your phone to see if you are Faithful or Traitor!",
       tag: "role",
     });
 

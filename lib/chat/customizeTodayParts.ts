@@ -28,7 +28,7 @@ export const PART_SYSTEM_PROMPT = [
   section("SAFETY RULES (STRICTLY ENFORCED)"),
   section("DEFAULTS FOR MISSING CONTEXT"),
   `# WHAT MAKES A GREAT CHALLENGE
-The whole point of the game is that it's genuinely funny and feels made for THIS group on THIS day. Think reality-TV secret missions: the Deceiver has to pull off something specific and slightly absurd in plain sight while everyone else wonders why they're acting weird.
+The whole point of the game is that it's genuinely funny and feels made for THIS group on THIS day. Think reality-TV secret missions: the Traitor has to pull off something specific and slightly absurd in plain sight while everyone else wonders why they're acting weird.
 
 - Build on the actual details the host gave you: use people's names, their jobs, what's going on with them today, the venue and what's there (menus, taps, games, staff), the time of day. A mission that could be used at any party is a weak mission.
 - Make them specific and checkable, with a clear finish line: "Get Jake to demonstrate a stretch on someone other than you" beats "talk to Jake about his job".
@@ -40,19 +40,19 @@ The whole point of the game is that it's genuinely funny and feels made for THIS
 Every mission must sit in the sweet spot: subtly sketchy.
 - Too small (reject): something a person would do anyway, or that nobody could ever find suspicious. "Ask Jake a question about his job." "Compliment someone's drink."
 - Too blatant (reject): so weird or forced that everyone instantly knows it's a mission, or that needs an obviously strange request out of nowhere.
-- Just right: it takes real effort, nerve or a bit of a long con to pull off, and an attentive player COULD notice something off ("why does she keep steering us to talk about the parade?"), but the Deceiver can always play it off as normal. It leaves a trail of small clues the table can piece together at the roundtable.
-- Give each mission a concrete, verifiable win condition (who has to say or do what, how many times, by when) so the Deceiver knows exactly when they've succeeded.
-- Before writing each mission, picture it happening at this table. If it's forgettable or would get the Deceiver caught in ten seconds, write a better one.
+- Just right: it takes real effort, nerve or a bit of a long con to pull off, and an attentive player COULD notice something off ("why does she keep steering us to talk about the parade?"), but the Traitor can always play it off as normal. It leaves a trail of small clues the table can piece together at the roundtable.
+- Give each mission a concrete, verifiable win condition (who has to say or do what, how many times, by when) so the Traitor knows exactly when they've succeeded.
+- Before writing each mission, picture it happening at this table. If it's forgettable or would get the Traitor caught in ten seconds, write a better one.
 
 # EVENTS MUST BE ACTUALLY DOABLE
 - Playable right where the group is, with what's realistically there (tables, chairs, phones, napkins, menus, coasters, whatever the venue has) plus nothing anyone would need to bring or buy.
-- Explainable in under a minute, playable in 5-20 minutes, and fun even for people who aren't Deceivers.
+- Explainable in under a minute, playable in 5-20 minutes, and fun even for people who aren't Traitors.
 - Nothing embarrassing, risky or disruptive to other customers or staff: no nudity, no leaving the venue, no shouting or running in a public place, nothing involving alcohol amounts, nothing that needs someone to be physically capable of more than they are today.
-- Every event MUST end with a clear winner (one person, or a small team) that the host can point to. Winners earn a secret clue about who the Deceivers are, so say in the instructions exactly how the winner is decided.
-- The Deceiver's secret objective inside the event should be subtly sketchy by the same dial above.
+- Every event MUST end with a clear winner (one person, or a small team) that the host can point to. Winners earn a secret clue about who the Traitors are, so say in the instructions exactly how the winner is decided.
+- The Traitor's secret objective inside the event should be subtly sketchy by the same dial above.
 
 # HOW THE GAME WORKS (context)
-Missions are what Deceivers do in secret all day; each has 30 minutes, and doing it is evidence people may remember later. Write missions someone could plausibly notice afterwards ("who complimented everyone's shoes today?") without them being obvious in the moment.
+Missions are what Traitors do in secret all day; each has 30 minutes, and doing it is evidence people may remember later. Write missions someone could plausibly notice afterwards ("who complimented everyone's shoes today?") without them being obvious in the moment.
 
 # THIS REQUEST
 You are generating ONE PART of the pack. Other parts are generated separately and merged, so produce only what the part instructions ask for, in the exact JSON shape required. The part instructions override any counts above. Keep mission text to 1-2 sentences and event instructions to 3-5 sentences.`,
@@ -87,7 +87,7 @@ const MISSION_PARTS: { category: string; angle: string; risk: string }[] = [
   { category: "social", angle: "pulling two people into the same bit without them realizing they're connected", risk: "1 medium and 1 high" },
   { category: "social", angle: "involving staff, strangers or the venue itself (politely)", risk: "1 low and 1 high" },
   { category: "conversational", angle: "a made-up fact, rumor or tradition about the venue, the town or the occasion that others start repeating", risk: "1 low and 1 medium" },
-  { category: "conversational", angle: "a running bit, catchphrase or fake confidence the Deceiver keeps up over time", risk: "1 medium and 1 high" },
+  { category: "conversational", angle: "a running bit, catchphrase or fake confidence the Traitor keeps up over time", risk: "1 medium and 1 high" },
   { category: "conversational", angle: "steering the group into a debate, vote or story without revealing you started it", risk: "1 low and 1 high" },
   { category: "sneaky", angle: "objects around you (coasters, menus, napkins, game pieces), never anyone's food, drink or belongings", risk: "1 low and 1 medium" },
   { category: "sneaky", angle: "seating, positions or where things are, changing it so smoothly nobody can say when it happened", risk: "1 medium and 1 high" },
@@ -115,7 +115,7 @@ export const PACK_PARTS: PackPart[] = [
   {
     key: "summary",
     instructions:
-      "Part: summary only. Write assistant_message: 2-4 enthusiastic sentences telling the host you built a custom pack of 18 Deceiver missions and 8 group events tailored to their event, mentioning a couple of specific ways it fits their setting. Then fill context_summary from the host's request (playerCount null if not given; conversationHistory: one-line recap of what the host asked for).",
+      "Part: summary only. Write assistant_message: 2-4 enthusiastic sentences telling the host you built a custom pack of 18 Traitor missions and 8 group events tailored to their event, mentioning a couple of specific ways it fits their setting. Then fill context_summary from the host's request (playerCount null if not given; conversationHistory: one-line recap of what the host asked for).",
     schema: {
       type: "object",
       additionalProperties: false,
@@ -171,7 +171,7 @@ export function mergePackParts(results: Record<string, unknown>): CustomizeToday
   return {
     assistant_message:
       summary?.assistant_message ??
-      `Here's your custom pack: ${missions.length} Deceiver missions and ${events.length} group events.`,
+      `Here's your custom pack: ${missions.length} Traitor missions and ${events.length} group events.`,
     mission_pack: missions.map((m, i) => ({ ...m, id: `m${i + 1}` })),
     event_pack: events.map((e, i) => ({ ...e, id: `e${i + 1}` })),
     context_summary: summary?.context_summary ?? {

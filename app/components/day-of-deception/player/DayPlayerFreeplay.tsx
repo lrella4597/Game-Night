@@ -91,7 +91,7 @@ function DeceiverView({
 
   return (
     <>
-      <Eyebrow className="!text-rose-300/80">Deceiver</Eyebrow>
+      <Eyebrow className="!text-rose-300/80">Traitor</Eyebrow>
       <Title className="mt-2">Your missions</Title>
       <p className="mt-2 text-[15px] text-white/50">
         {MISSION_WINDOW_MIN} minutes each. Miss one and everyone gets a clue. Be subtle.
@@ -139,10 +139,10 @@ function DeceiverView({
 function LoyalView() {
   return (
     <>
-      <Eyebrow className="!text-emerald-300/80">Loyal</Eyebrow>
+      <Eyebrow className="!text-emerald-300/80">Faithful</Eyebrow>
       <Title className="mt-2">Keep your eyes open.</Title>
       <p className="mt-3 text-[15px] leading-relaxed text-white/55">
-        Deceivers are doing secret missions all day. Notice who acts a little off, win events to earn clues,
+        Traitors are doing secret missions all day. Notice who acts a little off, win events to earn clues,
         and remember: anonymous tips can be fake.
       </p>
     </>

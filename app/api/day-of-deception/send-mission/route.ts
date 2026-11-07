@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       return NextResponse.json(sent);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to send mission";
-      return NextResponse.json({ error: message }, { status: message === "No deceivers found" ? 400 : 500 });
+      return NextResponse.json({ error: message }, { status: message === "No Traitors found" ? 400 : 500 });
     }
   } catch (err) {
     console.error("Send mission error:", err);

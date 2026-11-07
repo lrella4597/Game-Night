@@ -8,7 +8,7 @@ import { MISSION_WINDOW_MS, releasePublicClue } from "@/lib/day-of-deception/clu
 // netlify/functions/dod-tick.mts. For each game that's underway with a mission
 // cadence set (every 30 / 45 / 60 minutes), sends the next mission once it's
 // due, so missions keep arriving all day without the host doing anything.
-// Also expires missions a Deceiver didn't finish in time, which releases a
+// Also expires missions a Traitor didn't finish in time, which releases a
 // public clue to everyone.
 //
 // Safe to call any time: it only ever sends a mission that is already due, so

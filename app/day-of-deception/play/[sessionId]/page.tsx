@@ -407,18 +407,18 @@ export default function TraitorsDayPlayerPage() {
         {
           title: "Your Role",
           steps: [
-            "You are secretly assigned as either Faithful or Deceiver",
-            "Faithful: Work together to identify the Deceivers among you",
-            "Deceiver: Blend in and avoid being caught while completing secret missions",
+            "You are secretly assigned as either Faithful or Traitor",
+            "Faithful: Work together to identify the Traitors among you",
+            "Traitor: Blend in and avoid being caught while completing secret missions",
           ],
         },
         {
           title: "During the Day",
           steps: [
-            "Win events to earn secret clues about the Deceivers",
-            "Deceivers get secret missions. Each one has 30 minutes. Miss it and everyone gets a clue",
-            "Finished missions earn Deceivers a fake anonymous tip to send",
-            "Participate in group events — Deceivers may have secret objectives",
+            "Win events to earn secret clues about the Traitors",
+            "Traitors get secret missions. Each one has 30 minutes. Miss it and everyone gets a clue",
+            "Finished missions earn Traitors a fake anonymous tip to send",
+            "Participate in group events — Traitors may have secret objectives",
             "Pay attention to how others behave — look for suspicious actions",
           ],
         },
@@ -426,9 +426,9 @@ export default function TraitorsDayPlayerPage() {
           title: "Roundtable & Voting",
           steps: [
             "During the Roundtable, discuss openly who you suspect and why",
-            "When voting starts, pick the player you think is a Deceiver",
-            "The player with the most votes is revealed — were they Faithful or Deceiver?",
-            "Faithfuls win by finding all Deceivers. Deceivers win by surviving.",
+            "When voting starts, pick the player you think is a Traitor",
+            "The player with the most votes is revealed — were they Faithful or Traitor?",
+            "Faithfuls win by finding all Traitors. Traitors win by surviving.",
           ],
         },
       ]}

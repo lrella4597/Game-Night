@@ -1,4 +1,4 @@
-// Player identity for Day of Deception.
+// Player identity for Traitors.
 //
 // Stored in localStorage (not sessionStorage) so a player stays in their game
 // after closing the tab, locking the phone, or reopening the home screen app.

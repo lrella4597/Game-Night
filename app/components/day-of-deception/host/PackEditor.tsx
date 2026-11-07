@@ -342,7 +342,7 @@ export default function PackEditor({
                     {event.deceiverSecretMission && (
                       <div className="mt-2 px-2 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg">
                         <p className="text-xs text-red-300">
-                          <span className="font-semibold">Deceiver Goal:</span>{" "}
+                          <span className="font-semibold">Traitor Goal:</span>{" "}
                           {event.deceiverSecretMission}
                         </p>
                       </div>

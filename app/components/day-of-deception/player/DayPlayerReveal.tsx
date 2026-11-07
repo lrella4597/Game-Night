@@ -39,7 +39,7 @@ export default function DayPlayerReveal({ voteResult, myRole }: DayPlayerRevealP
             <Eyebrow>The group banished</Eyebrow>
             <h1 className={`${display} mt-3 text-6xl leading-none text-white`}>{accusedName}</h1>
             <p className={`${display} mt-4 text-2xl italic ${wasDeceiver ? "text-rose-300" : "text-emerald-300"}`}>
-              {wasDeceiver ? "who was a Deceiver." : "who was Loyal."}
+              {wasDeceiver ? "who was a Traitor." : "who was Faithful."}
             </p>
           </>
         )}
@@ -47,7 +47,7 @@ export default function DayPlayerReveal({ voteResult, myRole }: DayPlayerRevealP
 
       <Card tone={loyalWin ? "loyal" : "deceiver"} className="mt-10 text-center">
         <p className={`${display} text-3xl ${loyalWin ? "text-emerald-200" : "text-rose-200"}`}>
-          {loyalWin ? "The Loyal win" : "The Deceivers win"}
+          {loyalWin ? "The Faithful win" : "The Traitors win"}
         </p>
         {myRole && (
           <Pill tone={iWon ? "gold" : "neutral"} className="mt-3">

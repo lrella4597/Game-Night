@@ -45,7 +45,7 @@ export default function DayPlayerVoting({
     <>
       <div className="flex items-end justify-between gap-4">
         <div>
-          <Title>Who&apos;s a Deceiver?</Title>
+          <Title>Who&apos;s a Traitor?</Title>
           <p className="mt-2 text-sm text-white/50">One vote. It can&apos;t be changed.</p>
         </div>
         <Timer seconds={timerRemaining} running={timerRunning} size="md" />

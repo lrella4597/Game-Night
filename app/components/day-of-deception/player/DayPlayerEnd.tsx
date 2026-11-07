@@ -26,7 +26,7 @@ export default function DayPlayerEnd({ endgameData, myRole }: DayPlayerEndProps)
       <div className="pt-4 text-center">
         <Eyebrow>Game over</Eyebrow>
         <Title size="xl" className={`mt-3 ${loyalWin ? "text-emerald-200" : "text-rose-200"}`}>
-          {loyalWin ? "The Loyal win" : "The Deceivers win"}
+          {loyalWin ? "The Faithful win" : "The Traitors win"}
         </Title>
         {myRole && (
           <Pill tone={iWon ? "gold" : "neutral"} className="mt-4">
@@ -36,7 +36,7 @@ export default function DayPlayerEnd({ endgameData, myRole }: DayPlayerEndProps)
       </div>
 
       <Card tone="deceiver" className="mt-10">
-        <Eyebrow className="!text-rose-300/80">The Deceivers</Eyebrow>
+        <Eyebrow className="!text-rose-300/80">The Traitors</Eyebrow>
         <ul className="mt-3 space-y-2.5">
           {deceivers.map((p) => (
             <li key={p.id} className="flex items-center justify-between text-[15px]">
@@ -53,7 +53,7 @@ export default function DayPlayerEnd({ endgameData, myRole }: DayPlayerEndProps)
       </Card>
 
       <Card tone="loyal" className="mt-3">
-        <Eyebrow className="!text-emerald-300/80">The Loyal</Eyebrow>
+        <Eyebrow className="!text-emerald-300/80">The Faithful</Eyebrow>
         <ul className="mt-3 flex flex-wrap gap-2">
           {loyal.map((p) => (
             <li key={p.id} className="rounded-full bg-white/[0.06] px-3 py-1.5 text-sm text-white/80">

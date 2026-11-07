@@ -23,7 +23,7 @@ export default function DayHostEnd({ endgameData }: DayHostEndProps) {
       <div className="pt-6 text-center">
         <Eyebrow>Game over</Eyebrow>
         <Title size="xl" className={`mt-3 ${loyalWin ? "text-emerald-200" : "text-rose-200"}`}>
-          {loyalWin ? "The Loyal win." : "The Deceivers win."}
+          {loyalWin ? "The Faithful win." : "The Traitors win."}
         </Title>
         <p className="mt-4 text-white/50">
           {totalMissions} secret mission{totalMissions !== 1 ? "s" : ""} pulled off today.
@@ -32,7 +32,7 @@ export default function DayHostEnd({ endgameData }: DayHostEndProps) {
 
       <div className="mx-auto mt-12 grid max-w-3xl gap-4 md:grid-cols-2">
         <Card tone="deceiver">
-          <Eyebrow className="!text-rose-300/80">The Deceivers</Eyebrow>
+          <Eyebrow className="!text-rose-300/80">The Traitors</Eyebrow>
           <ul className="mt-4 space-y-3">
             {deceivers.map((p) => (
               <li key={p.id} className="flex items-center justify-between">
@@ -48,7 +48,7 @@ export default function DayHostEnd({ endgameData }: DayHostEndProps) {
           </ul>
         </Card>
         <Card tone="loyal">
-          <Eyebrow className="!text-emerald-300/80">The Loyal</Eyebrow>
+          <Eyebrow className="!text-emerald-300/80">The Faithful</Eyebrow>
           <ul className="mt-4 flex flex-wrap gap-2">
             {loyal.map((p) => (
               <li key={p.id} className="rounded-full bg-white/[0.06] px-3 py-1.5 text-sm text-white/80">

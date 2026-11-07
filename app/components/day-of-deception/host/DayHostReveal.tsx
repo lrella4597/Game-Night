@@ -51,12 +51,12 @@ export default function DayHostReveal({ voteResult, onEndGame }: DayHostRevealPr
             <Eyebrow>The group banished</Eyebrow>
             <h1 className={`${display} mt-3 text-7xl md:text-8xl leading-none text-white`}>{accusedName}</h1>
             <p className={`${display} mt-4 text-3xl italic ${wasDeceiver ? "text-rose-300" : "text-emerald-300"}`}>
-              {wasDeceiver ? "who was a Deceiver." : "who was Loyal."}
+              {wasDeceiver ? "who was a Traitor." : "who was Faithful."}
             </p>
           </>
         )}
         <p className={`${display} mt-10 text-4xl ${loyalWin ? "text-emerald-200" : "text-rose-200"}`}>
-          {loyalWin ? "The Loyal win." : "The Deceivers win."}
+          {loyalWin ? "The Faithful win." : "The Traitors win."}
         </p>
       </div>
 

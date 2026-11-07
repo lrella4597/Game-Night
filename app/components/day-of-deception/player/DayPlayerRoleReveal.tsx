@@ -43,18 +43,18 @@ export default function DayPlayerRoleReveal({ role, fellowDeceivers, loading }: 
         <h1
           className={`${display} mt-2 text-7xl leading-none ${isDeceiver ? "text-rose-300" : "text-emerald-300"}`}
         >
-          {isDeceiver ? "Deceiver" : "Loyal"}
+          {isDeceiver ? "Traitor" : "Faithful"}
         </h1>
         <p className="mx-auto mt-5 max-w-xs text-[15px] leading-relaxed text-white/65">
           {isDeceiver
             ? "Do your secret missions within 30 minutes. Each one earns a fake tip. Survive the final vote."
-            : "Win events to earn secret clues. Find the Deceivers. Vote them out at the Roundtable."}
+            : "Win events to earn secret clues. Find the Traitors. Vote them out at the Roundtable."}
         </p>
       </div>
 
       {isDeceiver && fellowDeceivers.length > 0 && (
         <Card tone="deceiver" className="mt-10">
-          <Eyebrow className="!text-rose-300/70">Your fellow Deceivers</Eyebrow>
+          <Eyebrow className="!text-rose-300/70">Your fellow Traitors</Eyebrow>
           <ul className="mt-3 space-y-2">
             {fellowDeceivers.map((t) => (
               <li key={t.id} className="flex items-center gap-2.5 text-[15px] text-white">
