@@ -121,19 +121,21 @@ export const PACK_PARTS: PackPart[] = [
         context_summary: props.context_summary,
       },
     },
-    maxTokens: 800,
+    maxTokens: 4000,
   },
   ...MISSION_PARTS.map(({ category, angle, risk }, i) => ({
     key: `missions-${category}-${i}`,
     instructions: `Part: missions only. Generate exactly 2 missions, both with category "${category}" (${CATEGORY_HINT[category]}). Angle for both: ${angle}. Risk levels: ${risk}.`,
     schema: missionsSchema,
-    maxTokens: 600,
+    // Generous: Opus thinks before writing, and running out mid-JSON loses the part.
+    // Only tokens actually used are billed.
+    maxTokens: 4000,
   })),
   ...EVENT_PARTS.map(([key, kind]) => ({
     key: `events-${key}`,
     instructions: `Part: events only. Generate exactly 1 event: a ${kind}. Give it a deceiverSecretMission.`,
     schema: eventsSchema,
-    maxTokens: 800,
+    maxTokens: 5000,
   })),
 ];
 

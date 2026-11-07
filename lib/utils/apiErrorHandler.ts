@@ -7,8 +7,9 @@ export async function handleApiError(response: Response): Promise<string> {
 
   try {
     const data = await response.json();
+    // The server's own message is the most useful thing to show
     if (data.error) {
-      errorMessage = data.error;
+      return data.error;
     }
   } catch {
     // If JSON parsing fails, use status-based messages
