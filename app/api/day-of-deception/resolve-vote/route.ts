@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     // Verify host owns session and fetch config
     const { data: session } = await db
       .from("traitors_day_sessions")
-      .select("id, host_id, max_token_vote_bonus")
+      .select("id, host_id")
       .eq("id", sessionId)
       .single();
 
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       playerNames[p.id] = p.display_name;
     }
 
-    const { tally, accusedId, tied } = resolveVotes(votes, playerNames, session.max_token_vote_bonus);
+    const { tally, accusedId, tied } = resolveVotes(votes, playerNames, 0);
 
     // Build individual vote details (who voted for whom)
     const voteDetails = votes.map((v) => ({

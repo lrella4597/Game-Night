@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import DayHostClueLog from "./DayHostClueLog";
 
 interface DayHostFreeplayProps {
+  sessionId: string;
   players: {
     id: string;
     displayName: string;
@@ -26,6 +28,7 @@ const DEFAULT_EVENT_TEMPLATES = [
 ];
 
 export default function DayHostFreeplay({
+  sessionId,
   players,
   onSendMission,
   onStartEvent,
@@ -115,8 +118,8 @@ export default function DayHostFreeplay({
                   {player.displayName}
                 </span>
                 <span className="text-white/40 text-xs">
-                  {player.shadowTokens} token
-                  {player.shadowTokens !== 1 ? "s" : ""}
+                  {player.shadowTokens} mission
+                  {player.shadowTokens !== 1 ? "s" : ""} done
                 </span>
               </div>
             </div>
@@ -215,7 +218,8 @@ export default function DayHostFreeplay({
             <h3 className="text-lg font-semibold text-white">Events</h3>
           </div>
           <p className="text-white/40 text-sm mb-4 flex-1">
-            Start a group event. Choose a template or start a random event.
+            Start a group event. When it ends, pick the winners: each one gets a
+            secret clue.
           </p>
           <div className="space-y-2">
             <button
@@ -290,6 +294,7 @@ export default function DayHostFreeplay({
           </button>
         </div>
       </div>
+      <DayHostClueLog sessionId={sessionId} players={players} />
     </div>
   );
 }

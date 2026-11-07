@@ -7,6 +7,16 @@ interface Mission {
   missionText: string;
   missionCategory: string;
   isCompleted: boolean;
+  createdAt?: string;
+}
+
+// Matches MISSION_WINDOW_MS on the server
+const MISSION_WINDOW_MIN = 30;
+
+function minutesLeft(createdAt?: string): number | null {
+  if (!createdAt) return null;
+  const left = MISSION_WINDOW_MIN - (Date.now() - new Date(createdAt).getTime()) / 60000;
+  return Math.max(0, Math.ceil(left));
 }
 
 interface DayPlayerFreeplayProps {
@@ -20,14 +30,6 @@ const categoryColors: Record<string, string> = {
   conversational: "bg-purple-500/20 text-purple-300 border-purple-500/30",
   sneaky: "bg-orange-500/20 text-orange-300 border-orange-500/30",
 };
-
-const observationTips = [
-  "Watch for suspicious behavior",
-  "Pay attention to alliances",
-  "Note who whispers to whom",
-  "Look for players acting out of character",
-  "Trust your instincts",
-];
 
 function CheckIcon({ className }: { className?: string }) {
   return (
@@ -87,7 +89,8 @@ function DeceiverView({
     <div className="space-y-4">
       <div className="px-4 py-3 rounded-lg border border-red-900/30 bg-red-500/5">
         <p className="text-red-300/70 text-xs text-center">
-          Complete missions to earn Shadow Tokens. Be subtle.
+          Each mission has {MISSION_WINDOW_MIN} minutes. Miss it and everyone gets a clue.
+          Finish it and you earn a fake tip to send. Be subtle.
         </p>
       </div>
 
@@ -116,8 +119,11 @@ function DeceiverView({
                 </span>
               </div>
               <div className="flex items-center justify-between mt-3">
-                <span className="text-[10px] text-yellow-400/60">
-                  +1 Shadow Token
+                <span className="text-[11px] text-yellow-400/70">
+                  {(() => {
+                    const left = minutesLeft(mission.createdAt);
+                    return left === null ? "+1 fake tip" : left > 0 ? `${left} min left · +1 fake tip` : "Time's up";
+                  })()}
                 </span>
                 <button
                   onClick={() => handleComplete(mission.id)}
@@ -159,34 +165,16 @@ function DeceiverView({
 
 function FaithfulView() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="px-4 py-3 rounded-lg border border-green-900/30 bg-green-500/5">
-        <p className="text-green-300/70 text-xs text-center">
-          Stay alert. The deceivers are hiding in plain sight.
+        <p className="text-green-300/80 text-sm text-center leading-relaxed">
+          Win events to earn clues. When a Deceiver misses a mission, everyone gets one.
         </p>
       </div>
-
-      {/* Observation tips */}
-      <div className="space-y-3">
-        <p className="text-xs uppercase tracking-wider text-white/40">
-          Tips for Observation
-        </p>
-        {observationTips.map((tip, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg border border-green-900/30 bg-white/5"
-          >
-            <EyeIcon className="w-4 h-4 text-green-400/60 flex-shrink-0" />
-            <p className="text-white/60 text-sm">{tip}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Encouragement */}
-      <div className="mt-4 p-4 rounded-lg border border-green-900/30 bg-green-500/5 text-center">
-        <p className="text-green-300/60 text-sm leading-relaxed">
-          Mingle, socialize, and keep your eyes open. The roundtable discussion
-          is your chance to voice your suspicions.
+      <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-green-900/30 bg-white/5">
+        <EyeIcon className="w-4 h-4 text-green-400/60 flex-shrink-0" />
+        <p className="text-white/60 text-sm">
+          Anonymous tips can be fake. Deceivers send them too.
         </p>
       </div>
     </div>
@@ -201,7 +189,7 @@ export default function DayPlayerFreeplay({
   const isDeceiver = role === "traitor";
 
   return (
-    <div className="min-h-screen bg-[#1a1f14] px-4 py-8">
+    <div className="bg-[#1a1f14] px-4 pt-8">
       {/* Ambient header */}
       <div className="text-center mb-6">
         <p className="text-green-400/40 text-sm mb-1">Enjoy the day!</p>

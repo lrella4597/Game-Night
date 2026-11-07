@@ -97,7 +97,7 @@ export async function sendMission(
   // Keep the mission itself off the lock screen, where others could see it
   await sendPushToPlayer(supabase, sessionId, targetPlayerId, {
     title: "🕵️ New secret mission",
-    body: "Open the game to see it. Don't let anyone see your screen.",
+    body: "You have 30 minutes. Miss it and everyone gets a clue. Don't let anyone see your screen.",
     tag: "mission",
   });
 

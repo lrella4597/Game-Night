@@ -88,18 +88,20 @@ export function useDayHostControls({ sessionId, broadcast }: UseDayHostControlsO
     [sessionId, broadcast]
   );
 
-  const endEvent = useCallback(async () => {
+  const endEvent = useCallback(async (winnerIds: string[] = []) => {
     const res = await fetch("/api/day-of-deception/end-event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId }),
+      body: JSON.stringify({ sessionId, winnerIds }),
     });
     if (!res.ok) {
       const data = await res.json();
       throw new Error(data.error || "Failed to end event");
     }
+    const data = await res.json().catch(() => ({}));
     broadcast(DAY_HOST_EVENTS.EVENT_END, {});
     broadcast(DAY_HOST_EVENTS.PHASE_CHANGE, { phase: "freeplay" });
+    return { cluesAwarded: (data.cluesAwarded as number) ?? 0 };
   }, [sessionId, broadcast]);
 
   const startRoundtable = useCallback(async () => {

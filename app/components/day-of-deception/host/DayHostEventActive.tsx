@@ -8,7 +8,8 @@ interface DayHostEventActiveProps {
     instructions: string;
     durationMinutes: number;
   } | null;
-  onEndEvent: () => Promise<void>;
+  players: { id: string; displayName: string; avatarColor: string }[];
+  onEndEvent: (winnerIds: string[]) => Promise<void>;
   timerRemaining: number;
   timerRunning: boolean;
 }
@@ -21,19 +22,26 @@ function formatTime(seconds: number): string {
 
 export default function DayHostEventActive({
   eventData,
+  players,
   onEndEvent,
   timerRemaining,
   timerRunning,
 }: DayHostEventActiveProps) {
   const [ending, setEnding] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [winners, setWinners] = useState<string[]>([]);
 
   async function handleEndEvent() {
     setEnding(true);
     try {
-      await onEndEvent();
+      await onEndEvent(winners);
     } catch {
       setEnding(false);
     }
+  }
+
+  function toggleWinner(id: string) {
+    setWinners((w) => (w.includes(id) ? w.filter((x) => x !== id) : [...w, id]));
   }
 
   if (!eventData) {
@@ -102,14 +110,63 @@ export default function DayHostEventActive({
         </p>
       </div>
 
-      {/* End Event Button */}
-      <button
-        onClick={handleEndEvent}
-        disabled={ending}
-        className="bg-green-600 hover:bg-green-500 text-white font-bold text-xl py-4 px-8 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
-      >
-        {ending ? "Ending..." : "End Event"}
-      </button>
+      {/* End Event: pick who won, each winner gets a secret clue */}
+      {!picking ? (
+        <button
+          onClick={() => setPicking(true)}
+          className="bg-green-600 hover:bg-green-500 text-white font-bold text-xl py-4 px-8 rounded-xl transition-all shadow-lg"
+        >
+          End Event
+        </button>
+      ) : (
+        <div className="w-full max-w-lg bg-white/5 rounded-xl border border-amber-500/30 p-5">
+          <h3 className="text-amber-300 font-semibold">Who won?</h3>
+          <p className="text-white/50 text-sm mb-4">
+            Each winner gets a secret clue on their phone. One other random player gets an
+            anonymous tip.
+          </p>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {players.map((p) => {
+              const on = winners.includes(p.id);
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => toggleWinner(p.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left border transition-colors ${
+                    on
+                      ? "border-amber-400 bg-amber-500/20 text-white"
+                      : "border-white/10 bg-white/5 text-white/70"
+                  }`}
+                >
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: p.avatarColor }} />
+                  <span className="truncate flex-1">{p.displayName}</span>
+                  {on && <span>🏆</span>}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleEndEvent}
+              disabled={ending}
+              className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl disabled:opacity-30"
+            >
+              {ending
+                ? "Ending..."
+                : winners.length > 0
+                  ? `End Event (${winners.length} winner${winners.length !== 1 ? "s" : ""})`
+                  : "End Event (no winner)"}
+            </button>
+            <button
+              onClick={() => setPicking(false)}
+              disabled={ending}
+              className="px-4 text-white/50 hover:text-white text-sm"
+            >
+              Back
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

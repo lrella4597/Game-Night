@@ -142,7 +142,7 @@ export default function DayHostAdminPanel({
                             Deceiver
                           </span>
                           <span className="text-white/40 text-xs">
-                            {player.shadowTokens} tokens
+                            {player.shadowTokens} missions
                           </span>
                         </div>
                       </div>
@@ -171,7 +171,7 @@ export default function DayHostAdminPanel({
                             Loyal
                           </span>
                           <span className="text-white/40 text-xs">
-                            {player.shadowTokens} tokens
+                            {player.shadowTokens} missions
                           </span>
                         </div>
                       </div>

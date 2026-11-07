@@ -267,11 +267,11 @@ export default function TraitorsDayHostPage() {
     }
   }
 
-  async function handleEndEvent() {
+  async function handleEndEvent(winnerIds: string[]) {
     clearTimer();
     broadcast(DAY_HOST_EVENTS.TIMER_STOP, {});
     try {
-      await controls.endEvent();
+      await controls.endEvent(winnerIds);
       setPhase("freeplay");
       setEventData(null);
       setEventsCompleted((c) => c + 1);
@@ -454,6 +454,7 @@ export default function TraitorsDayHostPage() {
       <>
       <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
       <DayHostFreeplay
+        sessionId={sessionId}
         players={players}
         onSendMission={handleSendMission}
         onStartEvent={handleStartEvent}
@@ -472,6 +473,7 @@ export default function TraitorsDayHostPage() {
         <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
         <DayHostEventActive
           eventData={eventData}
+          players={players}
           onEndEvent={handleEndEvent}
           timerRemaining={timerRemaining}
           timerRunning={timerRunning}

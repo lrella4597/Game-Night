@@ -48,7 +48,11 @@ Every mission must sit in the sweet spot: subtly sketchy.
 - Playable right where the group is, with what's realistically there (tables, chairs, phones, napkins, menus, coasters, whatever the venue has) plus nothing anyone would need to bring or buy.
 - Explainable in under a minute, playable in 5-20 minutes, and fun even for people who aren't Deceivers.
 - Nothing embarrassing, risky or disruptive to other customers or staff: no nudity, no leaving the venue, no shouting or running in a public place, nothing involving alcohol amounts, nothing that needs someone to be physically capable of more than they are today.
+- Every event MUST end with a clear winner (one person, or a small team) that the host can point to. Winners earn a secret clue about who the Deceivers are, so say in the instructions exactly how the winner is decided.
 - The Deceiver's secret objective inside the event should be subtly sketchy by the same dial above.
+
+# HOW THE GAME WORKS (context)
+Missions are what Deceivers do in secret all day; each has 30 minutes, and doing it is evidence people may remember later. Write missions someone could plausibly notice afterwards ("who complimented everyone's shoes today?") without them being obvious in the moment.
 
 # THIS REQUEST
 You are generating ONE PART of the pack. Other parts are generated separately and merged, so produce only what the part instructions ask for, in the exact JSON shape required. The part instructions override any counts above. Keep mission text to 1-2 sentences and event instructions to 3-5 sentences.`,

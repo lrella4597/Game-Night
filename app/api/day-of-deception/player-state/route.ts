@@ -121,7 +121,7 @@ export async function GET(req: Request) {
           targetId: p.vote_target_id as string,
           shadowTokens: p.shadow_tokens ?? 0,
         }));
-      const { tied } = resolveVotes(votes, names, session.max_token_vote_bonus ?? 3);
+      const { tied } = resolveVotes(votes, names, 0);
       const accused = players.find((p) => p.id === gs.accused_player_id);
       voteResult = {
         voteTally: gs.vote_tally,

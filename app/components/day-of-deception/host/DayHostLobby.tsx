@@ -118,7 +118,6 @@ export default function DayHostLobby({
     { key: "numberOfEvents", label: "Number of Events" },
     { key: "discussionTimerMinutes", label: "Discussion Timer (min)" },
     { key: "votingTimerSeconds", label: "Voting Timer (sec)" },
-    { key: "maxTokenVoteBonus", label: "Max Token Vote Bonus" },
     { key: "maxPlayers", label: "Max Players" },
   ];
 

@@ -87,7 +87,7 @@ export default function DayHostEnd({ endgameData }: DayHostEndProps) {
         <div className="bg-white/5 rounded-xl border border-green-900/30 px-5 py-3 text-center">
           <p className="text-green-400 text-2xl font-bold">{totalMissions}</p>
           <p className="text-white/40 text-xs uppercase tracking-wider">
-            Total Tokens
+            Missions Done
           </p>
         </div>
       </div>

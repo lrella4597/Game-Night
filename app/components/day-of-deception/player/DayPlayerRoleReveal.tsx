@@ -118,8 +118,8 @@ export default function DayPlayerRoleReveal({
       {/* Objective text */}
       <p className="text-white/70 text-sm text-center max-w-xs leading-relaxed mb-6">
         {isDeceiver
-          ? "Complete secret missions. Earn Shadow Tokens. Survive the final vote."
-          : "Observe carefully. Find the deceivers. Vote wisely at the roundtable."}
+          ? "Do your secret missions within 30 minutes. Each one earns a fake tip. Survive the final vote."
+          : "Win events to earn secret clues. Find the deceivers. Vote wisely at the roundtable."}
       </p>
 
       {/* Deceiver: fellow deceivers */}

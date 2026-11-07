@@ -17,6 +17,7 @@ import DayPlayerEnd from "@/app/components/day-of-deception/player/DayPlayerEnd"
 import type { DayPhase, PlayerRole, DayMission } from "@/lib/day-of-deception/types";
 import HowToPlayModal from "@/app/components/HowToPlayModal";
 import AboutYouCard from "@/app/components/day-of-deception/player/AboutYouCard";
+import DayPlayerClues from "@/app/components/day-of-deception/player/DayPlayerClues";
 import { usePushNotifications } from "@/lib/usePushNotifications";
 import { loadPlayer, clearPlayer, forgetLastSession } from "@/lib/day-of-deception/playerStorage";
 import { useGameChanges } from "@/lib/day-of-deception/useGameChanges";
@@ -54,6 +55,9 @@ interface EndgameData {
   players: { id: string; displayName: string; role: string; shadowTokens: number }[];
 }
 
+// Phases where the clue card shows under the main screen
+const CLUE_PHASES: DayPhase[] = ["freeplay", "event_active", "roundtable", "voting"];
+
 export default function TraitorsDayPlayerPage() {
   const params = useParams();
   const router = useRouter();
@@ -87,6 +91,9 @@ export default function TraitorsDayPlayerPage() {
 
   // "About you" answers: null until we know, then whether to ask
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
+
+  // Clues: bumped on every live change so the clue card refetches
+  const [clueRefresh, setClueRefresh] = useState(0);
 
   // Endgame
   const [endgameData, setEndgameData] = useState<EndgameData | null>(null);
@@ -345,6 +352,7 @@ export default function TraitorsDayPlayerPage() {
   // show up the moment the server sends them.
   useGameChanges(playerId ? sessionId : null, () => {
     syncState();
+    setClueRefresh((n) => n + 1);
     if (myRole === "traitor") fetchMissions();
   });
 
@@ -411,7 +419,9 @@ export default function TraitorsDayPlayerPage() {
         {
           title: "During the Day",
           steps: [
-            "Complete missions sent by the host to earn Shadow Tokens",
+            "Win events to earn secret clues about the Deceivers",
+            "Deceivers get secret missions. Each one has 30 minutes. Miss it and everyone gets a clue",
+            "Finished missions earn Deceivers a fake anonymous tip to send",
             "Participate in group events — Deceivers may have secret objectives",
             "Pay attention to how others behave — look for suspicious actions",
           ],
@@ -470,7 +480,21 @@ export default function TraitorsDayPlayerPage() {
   return (
     <>
       {pushPrompt}
-      {renderPhase()}
+      {CLUE_PHASES.includes(phase) && playerId && playerToken ? (
+        <div className="min-h-screen bg-[#1a1f14] pb-4">
+          {renderPhase()}
+          <DayPlayerClues
+          sessionId={sessionId}
+          playerId={playerId}
+          playerToken={playerToken}
+          role={myRole}
+          players={players}
+          refreshKey={clueRefresh}
+          />
+        </div>
+      ) : (
+        renderPhase()
+      )}
     </>
   );
 
