@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Card, Icon, Pill } from "../ui";
 
 interface ClueLogRow {
   id: string;
@@ -58,36 +59,46 @@ export default function DayHostClueLog({
   });
 
   return (
-    <div className="w-full max-w-5xl mt-8">
+    <div className="mt-10">
       <button
         onClick={() => setShow((s) => !s)}
-        className="text-sm text-white/40 hover:text-white/70 underline underline-offset-4"
+        className="flex items-center gap-2 text-sm text-white/40 transition-colors hover:text-white/70"
       >
+        <Icon name="eye" className="h-4 w-4" />
         {show ? "Hide clue log" : "Show clue log (spoilers)"}
       </button>
       {show && (
-        <div className="mt-3 bg-white/5 rounded-xl border border-amber-500/20 p-4">
+        <Card className="mt-3 p-2">
           {visible.length === 0 ? (
-            <p className="text-white/40 text-sm">No clues given yet.</p>
+            <p className="px-3 py-4 text-sm text-white/40">No clues given yet.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="divide-y divide-white/[0.06]">
               {visible.map((r) => (
-                <li key={r.id} className="text-sm border-b border-white/5 pb-2 last:border-0">
-                  <p className="text-white">{r.text}</p>
-                  <p className="text-white/40 text-xs mt-0.5">
-                    {r.source === "public"
-                      ? "Public clue (missed mission), everyone"
-                      : r.is_fake
-                        ? `FAKE tip from ${name(r.from_player_id)} to ${name(r.player_id)}`
-                        : r.source === "event"
-                          ? `To ${name(r.player_id)} for winning ${r.source_label ?? "an event"}`
-                          : `Anonymous tip to ${name(r.player_id)}`}
-                  </p>
+                <li key={r.id} className="flex items-start justify-between gap-4 px-3 py-3">
+                  <div className="min-w-0">
+                    <p className="text-[15px] text-white">{r.text}</p>
+                    <p className="mt-1 text-xs text-white/40">
+                      {r.source === "public"
+                        ? "Everyone, after a missed mission"
+                        : r.is_fake
+                          ? `${name(r.from_player_id)} → ${name(r.player_id)}`
+                          : r.source === "event"
+                            ? `${name(r.player_id)} won ${r.source_label ?? "an event"}`
+                            : `Anonymous tip to ${name(r.player_id)}`}
+                    </p>
+                  </div>
+                  {r.is_fake ? (
+                    <Pill tone="deceiver">Fake</Pill>
+                  ) : r.source === "public" ? (
+                    <Pill tone="gold">Public</Pill>
+                  ) : (
+                    <Pill>Real</Pill>
+                  )}
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );

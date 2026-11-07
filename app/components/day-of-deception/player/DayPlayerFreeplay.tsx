@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Button, Card, Eyebrow, Icon, Pill, Title } from "../ui";
 
 interface Mission {
   id: string;
@@ -10,57 +11,69 @@ interface Mission {
   createdAt?: string;
 }
 
-// Matches MISSION_WINDOW_MS on the server
-const MISSION_WINDOW_MIN = 30;
-
-function minutesLeft(createdAt?: string): number | null {
-  if (!createdAt) return null;
-  const left = MISSION_WINDOW_MIN - (Date.now() - new Date(createdAt).getTime()) / 60000;
-  return Math.max(0, Math.ceil(left));
-}
-
 interface DayPlayerFreeplayProps {
   role: "traitor" | "faithful" | null;
   missions: Mission[];
   onCompleteMission: (missionId: string, proof?: string) => Promise<void>;
 }
 
-const categoryColors: Record<string, string> = {
-  social: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  conversational: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  sneaky: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-};
+// Matches MISSION_WINDOW_MS on the server
+const MISSION_WINDOW_MIN = 30;
 
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
+function minutesLeft(createdAt: string | undefined, now: number): number | null {
+  if (!createdAt) return null;
+  const left = MISSION_WINDOW_MIN - (now - new Date(createdAt).getTime()) / 60000;
+  return Math.max(0, Math.ceil(left));
 }
 
-function EyeIcon({ className }: { className?: string }) {
+function useNow(intervalMs: number) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(t);
+  }, [intervalMs]);
+  return now;
+}
+
+function MissionCard({ mission, onComplete, now }: { mission: Mission; onComplete: () => Promise<void>; now: number }) {
+  const [busy, setBusy] = useState(false);
+  const left = minutesLeft(mission.createdAt, now);
+  const urgent = left !== null && left <= 5;
+
   return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
+    <Card tone="deceiver" className="p-5">
+      <div className="flex items-center justify-between gap-2">
+        <Pill tone="deceiver" className="capitalize">
+          {mission.missionCategory}
+        </Pill>
+        {left !== null && (
+          <Pill tone={urgent ? "deceiver" : "neutral"} className={urgent ? "animate-pulse" : ""}>
+            <Icon name="clock" className="h-3 w-3" />
+            {left > 0 ? `${left} min left` : "Time's up"}
+          </Pill>
+        )}
+      </div>
+      <p className="mt-4 text-[17px] leading-relaxed text-white">{mission.missionText}</p>
+      <div className="mt-5 flex items-center justify-between gap-3">
+        <span className="text-xs text-white/40">Earns 1 fake tip</span>
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={busy || left === 0}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await onComplete();
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <Icon name="check" className="h-4 w-4" />
+          {busy ? "Saving" : "Done it"}
+        </Button>
+      </div>
+    </Card>
   );
 }
 
@@ -71,141 +84,72 @@ function DeceiverView({
   missions: Mission[];
   onCompleteMission: (missionId: string, proof?: string) => Promise<void>;
 }) {
-  const [completingId, setCompletingId] = useState<string | null>(null);
-
-  const handleComplete = async (missionId: string) => {
-    setCompletingId(missionId);
-    try {
-      await onCompleteMission(missionId);
-    } finally {
-      setCompletingId(null);
-    }
-  };
-
-  const activeMissions = missions.filter((m) => !m.isCompleted);
-  const completedMissions = missions.filter((m) => m.isCompleted);
+  const now = useNow(30000);
+  const [showDone, setShowDone] = useState(false);
+  const active = missions.filter((m) => !m.isCompleted);
+  const done = missions.filter((m) => m.isCompleted);
 
   return (
-    <div className="space-y-4">
-      <div className="px-4 py-3 rounded-lg border border-red-900/30 bg-red-500/5">
-        <p className="text-red-300/70 text-xs text-center">
-          Each mission has {MISSION_WINDOW_MIN} minutes. Miss it and everyone gets a clue.
-          Finish it and you earn a fake tip to send. Be subtle.
-        </p>
-      </div>
+    <>
+      <Eyebrow className="!text-rose-300/80">Deceiver</Eyebrow>
+      <Title className="mt-2">Your missions</Title>
+      <p className="mt-2 text-[15px] text-white/50">
+        {MISSION_WINDOW_MIN} minutes each. Miss one and everyone gets a clue. Be subtle.
+      </p>
 
-      {/* Active missions */}
-      {activeMissions.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-xs uppercase tracking-wider text-white/40">
-            Active Missions
-          </p>
-          {activeMissions.map((mission) => (
-            <div
-              key={mission.id}
-              className="p-4 rounded-lg border border-white/15 bg-white/5"
-            >
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <p className="text-white/80 text-sm leading-relaxed flex-1">
-                  {mission.missionText}
-                </p>
-                <span
-                  className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border flex-shrink-0 ${
-                    categoryColors[mission.missionCategory] ||
-                    "bg-white/10 text-white/50 border-white/20"
-                  }`}
-                >
-                  {mission.missionCategory}
-                </span>
-              </div>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-[11px] text-yellow-400/70">
-                  {(() => {
-                    const left = minutesLeft(mission.createdAt);
-                    return left === null ? "+1 fake tip" : left > 0 ? `${left} min left · +1 fake tip` : "Time's up";
-                  })()}
-                </span>
-                <button
-                  onClick={() => handleComplete(mission.id)}
-                  disabled={completingId === mission.id}
-                  className="px-3 py-1.5 text-xs font-medium rounded-md border border-green-500/40 bg-green-500/10 text-green-300 hover:bg-green-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {completingId === mission.id ? "Completing..." : "Mark Complete"}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Completed missions */}
-      {completedMissions.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-xs uppercase tracking-wider text-white/40">
-            Completed
-          </p>
-          {completedMissions.map((mission) => (
-            <div
-              key={mission.id}
-              className="p-4 rounded-lg border border-green-900/30 bg-green-500/5"
-            >
-              <div className="flex items-start gap-3">
-                <CheckIcon className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                <p className="text-white/40 text-sm line-through leading-relaxed">
-                  {mission.missionText}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FaithfulView() {
-  return (
-    <div className="space-y-3">
-      <div className="px-4 py-3 rounded-lg border border-green-900/30 bg-green-500/5">
-        <p className="text-green-300/80 text-sm text-center leading-relaxed">
-          Win events to earn clues. When a Deceiver misses a mission, everyone gets one.
-        </p>
-      </div>
-      <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-green-900/30 bg-white/5">
-        <EyeIcon className="w-4 h-4 text-green-400/60 flex-shrink-0" />
-        <p className="text-white/60 text-sm">
-          Anonymous tips can be fake. Deceivers send them too.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-export default function DayPlayerFreeplay({
-  role,
-  missions,
-  onCompleteMission,
-}: DayPlayerFreeplayProps) {
-  const isDeceiver = role === "traitor";
-
-  return (
-    <div className="bg-[#1a1f14] px-4 pt-8">
-      {/* Ambient header */}
-      <div className="text-center mb-6">
-        <p className="text-green-400/40 text-sm mb-1">Enjoy the day!</p>
-        <h1 className="text-xl font-bold text-green-400">
-          {isDeceiver ? "Freeplay - Deceiver" : "Freeplay"}
-        </h1>
-      </div>
-
-      {/* Content based on role */}
-      <div className="max-w-sm mx-auto">
-        {isDeceiver ? (
-          <DeceiverView missions={missions} onCompleteMission={onCompleteMission} />
+      <div className="mt-6 space-y-3">
+        {active.length === 0 ? (
+          <Card className="text-center py-8">
+            <Icon name="bell" className="mx-auto h-6 w-6 text-white/30" />
+            <p className="mt-3 text-[15px] text-white/60">No missions right now.</p>
+            <p className="mt-1 text-sm text-white/35">You&apos;ll get a notification when one arrives.</p>
+          </Card>
         ) : (
-          <FaithfulView />
+          active.map((m) => (
+            <MissionCard key={m.id} mission={m} now={now} onComplete={() => onCompleteMission(m.id)} />
+          ))
         )}
       </div>
-    </div>
+
+      {done.length > 0 && (
+        <div className="mt-4">
+          <button
+            onClick={() => setShowDone((s) => !s)}
+            className="flex w-full items-center justify-between px-1 py-2 text-sm text-white/45 hover:text-white/70"
+          >
+            <span>Completed ({done.length})</span>
+            <span className="text-xs">{showDone ? "Hide" : "Show"}</span>
+          </button>
+          {showDone && (
+            <ul className="mt-1 space-y-2">
+              {done.map((m) => (
+                <li key={m.id} className="flex gap-3 rounded-xl bg-white/[0.03] px-4 py-3 text-sm text-white/40">
+                  <Icon name="check" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400/70" />
+                  <span className="line-through decoration-white/20">{m.missionText}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </>
   );
+}
+
+function LoyalView() {
+  return (
+    <>
+      <Eyebrow className="!text-emerald-300/80">Loyal</Eyebrow>
+      <Title className="mt-2">Keep your eyes open.</Title>
+      <p className="mt-3 text-[15px] leading-relaxed text-white/55">
+        Deceivers are doing secret missions all day. Notice who acts a little off, win events to earn clues,
+        and remember: anonymous tips can be fake.
+      </p>
+    </>
+  );
+}
+
+/** Day phase content. The page wraps it in a Screen with the clue card below. */
+export default function DayPlayerFreeplay({ role, missions, onCompleteMission }: DayPlayerFreeplayProps) {
+  return role === "traitor" ? <DeceiverView missions={missions} onCompleteMission={onCompleteMission} /> : <LoyalView />;
 }

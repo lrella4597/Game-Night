@@ -15,7 +15,8 @@ import DayPlayerVoting from "@/app/components/day-of-deception/player/DayPlayerV
 import DayPlayerReveal from "@/app/components/day-of-deception/player/DayPlayerReveal";
 import DayPlayerEnd from "@/app/components/day-of-deception/player/DayPlayerEnd";
 import type { DayPhase, PlayerRole, DayMission } from "@/lib/day-of-deception/types";
-import HowToPlayModal from "@/app/components/HowToPlayModal";
+import DodHelp from "@/app/components/day-of-deception/DodHelp";
+import { Button, Icon, LoadingScreen, Screen } from "@/app/components/day-of-deception/ui";
 import AboutYouCard from "@/app/components/day-of-deception/player/AboutYouCard";
 import DayPlayerClues from "@/app/components/day-of-deception/player/DayPlayerClues";
 import { usePushNotifications } from "@/lib/usePushNotifications";
@@ -395,18 +396,13 @@ export default function TraitorsDayPlayerPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (!playerId || !playerName) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-2xl text-green-300 animate-pulse">Loading...</div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   const dodPlayerHelp = (
-    <HowToPlayModal
+    <DodHelp
       gameKey="howto_dod_player"
-      title="How to Play Day of Deception"
-      accentColor="red"
+      title="How to play"
       sections={[
         {
           title: "Your Role",
@@ -442,38 +438,39 @@ export default function TraitorsDayPlayerPage() {
   // Notification prompt, shown in every phase until handled, so players who
   // rejoin mid-game still get asked.
   const pushPrompt = pushPromptDismissed || pushSubscribed || pushPermission === "denied" ? null : pushNeedsInstall ? (
-    <div className="fixed bottom-4 left-4 right-4 z-50 bg-gray-900 border border-green-500/40 rounded-xl p-4 flex items-start gap-3 shadow-lg">
-      <span className="text-2xl">📲</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-white text-sm font-semibold">Add this game to your home screen</p>
-        <p className="text-white/60 text-xs mt-1">
-          iPhones only send game alerts to home screen apps. Tap the Share button, then
-          &ldquo;Add to Home Screen&rdquo;. Open it from there and sign in with the same account.
-        </p>
+    <div className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-2xl border border-white/10 bg-[#16161B]/95 p-4 shadow-2xl backdrop-blur-xl">
+      <div className="flex items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8C67A]/15 text-[#E8C67A]">
+          <Icon name="plus" className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-medium text-white">Add the game to your home screen</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-white/55">
+            iPhones only send game alerts to home screen apps. Tap Share, then &ldquo;Add to Home Screen&rdquo;.
+            Open it from there and sign in again.
+          </p>
+        </div>
+        <button onClick={() => setPushPromptDismissed(true)} aria-label="Dismiss" className="-mr-1 -mt-1 p-1 text-white/35 hover:text-white">
+          <Icon name="x" className="h-4 w-4" />
+        </button>
       </div>
-      <button
-        onClick={() => setPushPromptDismissed(true)}
-        className="shrink-0 text-white/40 hover:text-white text-sm"
-        aria-label="Dismiss"
-      >
-        ✕
-      </button>
     </div>
   ) : pushSupported ? (
-    <div className="fixed bottom-4 left-4 right-4 z-50 bg-gray-900 border border-green-500/40 rounded-xl p-4 flex items-center gap-3 shadow-lg">
-      <span className="text-2xl">🔔</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-white text-sm font-semibold">Enable notifications</p>
-        <p className={pushError ? "text-red-400 text-xs" : "text-white/50 text-xs"}>
-          {pushError ?? "Get secret alerts even when your phone is locked"}
-        </p>
+    <div className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-50 mx-auto max-w-md rounded-2xl border border-white/10 bg-[#16161B]/95 p-4 shadow-2xl backdrop-blur-xl">
+      <div className="flex items-center gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8C67A]/15 text-[#E8C67A]">
+          <Icon name="bell" className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-medium text-white">Turn on alerts</p>
+          <p className={`text-[13px] ${pushError ? "text-rose-300" : "text-white/50"}`}>
+            {pushError ?? "Missions and clues, even when your phone is locked."}
+          </p>
+        </div>
+        <Button size="sm" onClick={subscribePush}>
+          Allow
+        </Button>
       </div>
-      <button
-        onClick={subscribePush}
-        className="shrink-0 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-sm font-semibold rounded-lg transition-colors"
-      >
-        Allow
-      </button>
     </div>
   ) : null;
 
@@ -481,7 +478,7 @@ export default function TraitorsDayPlayerPage() {
     <>
       {pushPrompt}
       {CLUE_PHASES.includes(phase) && playerId && playerToken ? (
-        <div className="min-h-screen bg-[#1a1f14] pb-4">
+        <Screen tone={phase === "freeplay" && myRole === "traitor" ? "deceiver" : "neutral"} className="pb-16">
           {renderPhase()}
           <DayPlayerClues
           sessionId={sessionId}
@@ -491,7 +488,7 @@ export default function TraitorsDayPlayerPage() {
           players={players}
           refreshKey={clueRefresh}
           />
-        </div>
+        </Screen>
       ) : (
         renderPhase()
       )}
@@ -503,16 +500,17 @@ export default function TraitorsDayPlayerPage() {
   if (phase === "lobby") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
-        {hasProfile === false && playerId && playerToken && (
-          <AboutYouCard
-            sessionId={sessionId}
-            playerId={playerId}
-            playerToken={playerToken}
-            onDone={() => setHasProfile(true)}
-          />
-        )}
-        <DayPlayerLobby players={players} playerName={playerName ?? ""} />
+        {dodPlayerHelp}
+        <DayPlayerLobby players={players} playerName={playerName ?? ""}>
+          {hasProfile === false && playerId && playerToken ? (
+            <AboutYouCard
+              sessionId={sessionId}
+              playerId={playerId}
+              playerToken={playerToken}
+              onDone={() => setHasProfile(true)}
+            />
+          ) : null}
+        </DayPlayerLobby>
       </>
     );
   }
@@ -520,7 +518,7 @@ export default function TraitorsDayPlayerPage() {
   if (phase === "roles_revealed") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        {dodPlayerHelp}
         <DayPlayerRoleReveal
           role={myRole}
           fellowDeceivers={fellowDeceivers}
@@ -533,7 +531,7 @@ export default function TraitorsDayPlayerPage() {
   if (phase === "freeplay") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        {dodPlayerHelp}
         <DayPlayerFreeplay
           role={myRole}
           missions={missions}
@@ -546,7 +544,7 @@ export default function TraitorsDayPlayerPage() {
   if (phase === "event_active") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        {dodPlayerHelp}
         <DayPlayerEventActive
           eventData={eventData}
           role={myRole}
@@ -560,7 +558,7 @@ export default function TraitorsDayPlayerPage() {
   if (phase === "roundtable") {
     return (
       <>
-      <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+      {dodPlayerHelp}
       <DayPlayerRoundtable
         timerRemaining={timerRemaining}
         timerRunning={timerRunning}
@@ -572,7 +570,7 @@ export default function TraitorsDayPlayerPage() {
   if (phase === "voting") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        {dodPlayerHelp}
         <DayPlayerVoting
           players={players}
           myPlayerId={playerId ?? ""}
@@ -590,7 +588,7 @@ export default function TraitorsDayPlayerPage() {
   if (phase === "reveal") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodPlayerHelp}</div>
+        {dodPlayerHelp}
         <DayPlayerReveal voteResult={voteResult} myRole={myRole} />
       </>
     );
@@ -600,18 +598,7 @@ export default function TraitorsDayPlayerPage() {
     return <DayPlayerEnd endgameData={endgameData} myRole={myRole} />;
   }
 
-  // Fallback — waiting
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="text-2xl text-green-300 animate-pulse mb-2">
-          Waiting...
-        </div>
-        <p className="text-white/40 text-sm">
-          {connected ? "Connected" : "Connecting..."}
-        </p>
-      </div>
-    </div>
-  );
+  // Fallback: waiting
+  return <LoadingScreen label={connected ? "Waiting for the game" : "Connecting"} />;
   }
 }
