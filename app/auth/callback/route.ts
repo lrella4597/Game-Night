@@ -5,7 +5,9 @@ import { getBaseUrl } from '@/lib/utils/getBaseUrl'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
+  // Only allow returning to a path on this site (no open redirects)
+  const rawNext = searchParams.get('next') ?? '/'
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.startsWith('/\\') ? rawNext : '/'
   const authDebug = process.env.NEXT_PUBLIC_AUTH_DEBUG === 'true'
 
   // Use the request origin if it looks like a real domain;

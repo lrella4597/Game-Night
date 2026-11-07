@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifyPlayer } from "@/lib/day-of-deception/playerAuth";
 import { resolveVotes } from "@/lib/day-of-deception/winCondition";
 import { EVENT_TEMPLATES } from "@/lib/day-of-deception/events";
 
@@ -16,11 +17,9 @@ export async function GET(req: Request) {
     if (!sessionId || !playerId || !token) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
-    if (token !== `${playerId}:${sessionId}`) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
-    }
-
     const supabase = await createClient();
+    const auth = await verifyPlayer(supabase, sessionId, playerId, token);
+    if (!auth.ok) return auth.response;
 
     const [{ data: session }, { data: gs }, { data: rows }] = await Promise.all([
       supabase

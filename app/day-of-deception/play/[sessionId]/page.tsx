@@ -244,6 +244,11 @@ export default function TraitorsDayPlayerPage() {
         router.replace("/day-of-deception/play");
         return;
       }
+      if (res.status === 401) {
+        // Signed out on this phone: sign back in, then we come right back
+        router.replace("/day-of-deception/play?signin=1");
+        return;
+      }
       if (!res.ok) return;
       const s = await res.json();
       // Game is over: opening the app next time should go to the join screen
@@ -418,7 +423,7 @@ export default function TraitorsDayPlayerPage() {
         <p className="text-white text-sm font-semibold">Add this game to your home screen</p>
         <p className="text-white/60 text-xs mt-1">
           iPhones only send game alerts to home screen apps. Tap the Share button, then
-          &ldquo;Add to Home Screen&rdquo;. Open it from there and join with the same code and name.
+          &ldquo;Add to Home Screen&rdquo;. Open it from there and sign in with the same account.
         </p>
       </div>
       <button

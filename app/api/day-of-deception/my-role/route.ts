@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { verifyPlayer } from "@/lib/day-of-deception/playerAuth";
 
 export async function GET(req: Request) {
   try {
@@ -12,12 +13,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
     }
 
-    // Validate token
-    if (token !== `${playerId}:${sessionId}`) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
-    }
-
     const supabase = await createClient();
+    const auth = await verifyPlayer(supabase, sessionId, playerId, token);
+    if (!auth.ok) return auth.response;
 
     // Fetch this player's role
     const { data: player, error } = await supabase
