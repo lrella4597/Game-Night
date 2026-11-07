@@ -16,7 +16,7 @@ export const MISSION_TEMPLATES: MissionTemplate[] = [
   // Conversational missions
   { text: "Casually use the word 'suspicious' in 3 separate conversations", category: "conversational" },
   { text: "Steer a conversation toward the topic of trust without anyone noticing", category: "conversational" },
-  { text: "Get someone to say the word 'deceiver' without directly asking them to", category: "conversational" },
+  { text: "Get someone to say the word 'traitor' without directly asking them to", category: "conversational" },
   { text: "Tell a story that is 90% true but has one key lie — see if anyone catches it", category: "conversational" },
   { text: "Whisper something to 2 different people to make others curious", category: "conversational" },
   { text: "Bring up a false rumor about what happened earlier and see who believes it", category: "conversational" },
@@ -25,10 +25,10 @@ export const MISSION_TEMPLATES: MissionTemplate[] = [
   // Sneaky missions
   { text: "Move or hide someone's personal item (phone, drink) without them noticing for 5 minutes", category: "sneaky" },
   { text: "Get someone to leave the room/area on a made-up errand", category: "sneaky" },
-  { text: "Secretly signal to your fellow deceiver(s) without anyone else noticing", category: "sneaky" },
+  { text: "Secretly signal to your fellow traitor(s) without anyone else noticing", category: "sneaky" },
   { text: "Blame someone else for something you did (harmless) and see if it sticks", category: "sneaky" },
   { text: "Pretend to receive a 'secret message' on your phone and act worried about it", category: "sneaky" },
-  { text: "Point out suspicious behavior about a loyal player to cast doubt on them", category: "sneaky" },
+  { text: "Point out suspicious behavior about a faithful player to cast doubt on them", category: "sneaky" },
 ];
 
 export function getRandomMission(exclude?: string[]): MissionTemplate {

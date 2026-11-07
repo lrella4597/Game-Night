@@ -85,7 +85,7 @@ export default function GameSelectPage() {
           </p>
         </Link>
 
-        {/* Day of Deception */}
+        {/* Traitors */}
         <Link
           href="/day-of-deception"
           className="group rounded-2xl border border-slate-200 bg-white p-8 flex flex-col items-center text-center gap-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all"
@@ -105,7 +105,7 @@ export default function GameSelectPage() {
             </svg>
           </div>
           <h2 className="text-xl font-bold text-slate-900 group-hover:text-slate-700">
-            Day of Deception
+            Traitors
           </h2>
           <p className="text-sm text-slate-500 leading-relaxed">
             All-day social deduction with missions and a final roundtable vote

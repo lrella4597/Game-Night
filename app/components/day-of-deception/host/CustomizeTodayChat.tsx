@@ -209,7 +209,7 @@ export default function CustomizeTodayChat({
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-green-400">
+          <h2 className="font-[family-name:var(--font-display)] text-3xl text-white">
             Customize Today
           </h2>
           <p className="text-sm text-white/60 mt-1">
@@ -238,12 +238,12 @@ export default function CustomizeTodayChat({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto bg-[#141a0f] rounded-xl border border-green-900/30 p-4 mb-4 space-y-4">
+      <div className="flex-1 overflow-y-auto bg-black/30 rounded-2xl border border-white/[0.08] p-4 mb-4 space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="text-5xl mb-4 opacity-60">
               <svg
-                className="w-16 h-16 text-green-500/40 mx-auto"
+                className="w-16 h-16 text-[#E8C67A]/40 mx-auto"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -256,7 +256,7 @@ export default function CustomizeTodayChat({
                 />
               </svg>
             </div>
-            <p className="text-lg font-semibold text-green-400">
+            <p className="font-[family-name:var(--font-display)] text-2xl text-white">
               Tell me about your event
             </p>
             <p className="text-sm mt-2 max-w-md text-white/40">
@@ -270,7 +270,7 @@ export default function CustomizeTodayChat({
                 <button
                   key={prompt}
                   onClick={() => handleSend(prompt)}
-                  className="px-3 py-2 text-xs rounded-lg border border-green-700/40 bg-green-900/20 text-green-300 hover:bg-green-800/30 hover:border-green-600/50 transition-all"
+                  className="px-3 py-2 text-xs rounded-lg border border-white/10 bg-white/[0.04] text-white/75 hover:bg-white/[0.08] hover:text-white transition-all"
                 >
                   {prompt}
                 </button>
@@ -287,10 +287,10 @@ export default function CustomizeTodayChat({
             }`}
           >
             <div
-              className={`max-w-[80%] rounded-xl px-4 py-3 ${
+              className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                 msg.role === "user"
-                  ? "bg-green-600 text-white"
-                  : "bg-white/5 text-white border border-green-900/30"
+                  ? "bg-[#E8C67A] text-[#18130A]"
+                  : "bg-white/5 text-white border border-white/[0.08]"
               }`}
             >
               <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
@@ -303,7 +303,7 @@ export default function CustomizeTodayChat({
           <div className="flex justify-center pt-2">
             <button
               onClick={handleUsePack}
-              className="px-6 py-3 rounded-xl font-semibold bg-green-600 hover:bg-green-500 text-white transition-all shadow-lg shadow-green-900/30 flex items-center gap-2"
+              className="px-6 py-3 rounded-2xl font-semibold bg-[#E8C67A] text-[#18130A] hover:bg-[#F1D597] transition-all flex items-center gap-2"
             >
               <svg
                 className="w-5 h-5"
@@ -326,10 +326,10 @@ export default function CustomizeTodayChat({
 
         {loading && (
           <div className="flex justify-start">
-            <div className="max-w-[80%] rounded-xl px-4 py-3 bg-white/5 border border-green-900/30">
+            <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-white/5 border border-white/[0.08]">
               <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-400"></div>
-                <span className="text-sm text-green-300/70">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#E8C67A]"></div>
+                <span className="text-sm text-white/55">
                   Designing your pack... this takes about 20 seconds
                 </span>
               </div>
@@ -348,7 +348,7 @@ export default function CustomizeTodayChat({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyPress}
             placeholder="Describe your event, setting, and vibe..."
-            className="w-full px-4 py-3 pr-12 rounded-xl border border-green-900/30 bg-[#141a0f] text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-green-600 resize-none"
+            className="w-full px-4 py-3 pr-12 rounded-2xl border border-white/[0.08] bg-black/30 text-white placeholder-white/30 focus:outline-none focus:border-[#E8C67A]/50 resize-none"
             rows={2}
             disabled={loading}
           />
@@ -384,7 +384,7 @@ export default function CustomizeTodayChat({
         <button
           onClick={() => handleSend()}
           disabled={!input.trim() || loading}
-          className="px-6 py-3 rounded-xl font-semibold bg-green-600 text-white hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          className="px-6 py-3 rounded-2xl font-semibold bg-[#E8C67A] text-[#18130A] hover:bg-[#F1D597] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           Send
         </button>

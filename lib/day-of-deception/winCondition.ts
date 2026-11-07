@@ -30,6 +30,7 @@ export function resolveVotes(
         weightedVotes: 0,
       };
     }
+    // One person, one vote (pass 0 as the bonus). Kept for old games.
     const weight = 1 + Math.min(vote.shadowTokens, maxTokenVoteBonus);
     tally[vote.targetId].votes += 1;
     tally[vote.targetId].weightedVotes += weight;

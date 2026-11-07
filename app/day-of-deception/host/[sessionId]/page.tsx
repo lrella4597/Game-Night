@@ -17,7 +17,8 @@ import DayHostRoundtable from "@/app/components/day-of-deception/host/DayHostRou
 import DayHostVoting from "@/app/components/day-of-deception/host/DayHostVoting";
 import DayHostReveal from "@/app/components/day-of-deception/host/DayHostReveal";
 import DayHostEnd from "@/app/components/day-of-deception/host/DayHostEnd";
-import HowToPlayModal from "@/app/components/HowToPlayModal";
+import DodHelp from "@/app/components/day-of-deception/DodHelp";
+import { Button, LoadingScreen, Screen, Title } from "@/app/components/day-of-deception/ui";
 import type {
   DayPhase,
   DaySessionConfig,
@@ -267,11 +268,11 @@ export default function TraitorsDayHostPage() {
     }
   }
 
-  async function handleEndEvent() {
+  async function handleEndEvent(winnerIds: string[]) {
     clearTimer();
     broadcast(DAY_HOST_EVENTS.TIMER_STOP, {});
     try {
-      await controls.endEvent();
+      await controls.endEvent(winnerIds);
       setPhase("freeplay");
       setEventData(null);
       setEventsCompleted((c) => c + 1);
@@ -364,70 +365,63 @@ export default function TraitorsDayHostPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (authLoading || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-2xl text-green-300 animate-pulse">Loading...</div>
-      </div>
-    );
+    return <LoadingScreen label="Loading your game" />;
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <p className="text-xl text-red-400">{error}</p>
-        <button
-          onClick={() => router.push("/day-of-deception")}
-          className="px-6 py-3 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-        >
-          Back to Day of Deception
-        </button>
-      </div>
+      <Screen center>
+        <div className="text-center">
+          <Title size="md">Something went wrong.</Title>
+          <p className="mt-3 text-[15px] text-rose-300">{error}</p>
+          <Button variant="secondary" className="mt-8" onClick={() => router.push("/day-of-deception")}>
+            Back to my games
+          </Button>
+        </div>
+      </Screen>
     );
   }
 
   if (!config) return null;
 
   const dodHostHelp = (
-    <HowToPlayModal
-      gameKey="howto_dod_host"
-      title="How to Host Day of Deception"
-      accentColor="red"
+    <DodHelp
+      gameKey="howto_dod_host_v2"
+      title="How to host"
       sections={[
         {
           title: "Setup",
           steps: [
-            "Share the join code so players can join on their phones",
-            "Wait for everyone to connect, then click \"Start Game\"",
-            "Roles are assigned secretly — some players become Deceivers",
+            "Put the QR code on a screen. People with the app already just open it and type the code",
+            "Optional: tap Customize Today so the AI writes missions and events for your group",
+            "Set Automatic missions, then tap Start the game. Roles are dealt secretly",
           ],
         },
         {
-          title: "Running the Day",
+          title: "During the day",
           steps: [
-            "During Freeplay, use \"Send Mission\" to give players secret tasks",
-            "Use \"Start Event\" to run timed group activities (Deceivers get secret objectives)",
-            "Missions and events create clues about who the Deceivers are",
-            "When ready, click \"Start Roundtable\" for players to discuss suspicions",
+            "Missions go to Traitors automatically. Each has 30 minutes, and a missed one gives everyone a clue",
+            "Run events whenever the group is together. When one ends, pick the winners: each gets a secret clue",
+            "Your phone can sleep. The game keeps running without your screen",
           ],
         },
         {
-          title: "Voting & Reveal",
+          title: "The Roundtable",
           steps: [
-            "After the roundtable discussion, click \"Start Voting\"",
-            "Players vote on who they think is a Deceiver",
-            "Click \"Resolve Vote\" to reveal results and the accused player's role",
-            "The game ends when all Deceivers are found or they outnumber the Faithful",
+            "At the end of the day, start the Roundtable. People share (or fake) their clues",
+            "Start the vote, then reveal the result. Banish a Traitor and the Faithful win",
           ],
         },
       ]}
     />
   );
 
+
   // Phase rendering
   if (phase === "lobby") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        {dodHostHelp}
         <DayHostLobby
           sessionId={sessionId}
           players={players}
@@ -443,7 +437,7 @@ export default function TraitorsDayHostPage() {
   if (phase === "roles_revealed") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        {dodHostHelp}
         <DayHostRolesRevealed onBeginDay={handleBeginDay} playerCount={players.length} />
       </>
     );
@@ -452,8 +446,9 @@ export default function TraitorsDayHostPage() {
   if (phase === "freeplay") {
     return (
       <>
-      <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+      {dodHostHelp}
       <DayHostFreeplay
+        sessionId={sessionId}
         players={players}
         onSendMission={handleSendMission}
         onStartEvent={handleStartEvent}
@@ -469,9 +464,10 @@ export default function TraitorsDayHostPage() {
   if (phase === "event_active") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        {dodHostHelp}
         <DayHostEventActive
           eventData={eventData}
+          players={players}
           onEndEvent={handleEndEvent}
           timerRemaining={timerRemaining}
           timerRunning={timerRunning}
@@ -483,7 +479,7 @@ export default function TraitorsDayHostPage() {
   if (phase === "roundtable") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        {dodHostHelp}
         <DayHostRoundtable
           timerRemaining={timerRemaining}
           timerRunning={timerRunning}
@@ -496,7 +492,7 @@ export default function TraitorsDayHostPage() {
   if (phase === "voting") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        {dodHostHelp}
         <DayHostVoting
           sessionId={sessionId}
           onResolveVote={handleResolveVote}
@@ -510,7 +506,7 @@ export default function TraitorsDayHostPage() {
   if (phase === "reveal") {
     return (
       <>
-        <div className="fixed top-4 right-4 z-40">{dodHostHelp}</div>
+        {dodHostHelp}
         <DayHostReveal
           voteResult={voteResult}
           onEndGame={handleEndGame}
@@ -524,14 +520,5 @@ export default function TraitorsDayHostPage() {
   }
 
   // Fallback
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="text-2xl text-green-300 animate-pulse mb-2">Waiting...</div>
-        <p className="text-white/40 text-sm">
-          {connected ? "Connected" : "Connecting..."}
-        </p>
-      </div>
-    </div>
-  );
+  return <LoadingScreen label={connected ? "Waiting for the game" : "Connecting"} />;
 }

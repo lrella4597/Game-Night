@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import Link from "next/link";
 import AuthModal from "@/app/components/auth/AuthModal";
 import { savePlayer } from "@/lib/day-of-deception/playerStorage";
+import { Button, Eyebrow, Icon, Screen, display } from "@/app/components/day-of-deception/ui";
 
 interface PlayingGame {
   sessionId: string;
@@ -85,94 +86,82 @@ export default function TraitorsDayLandingPage() {
     }
   }
 
+  const statusLabel = (st: string) => (st === "lobby" ? "Waiting to start" : "In progress");
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen px-4">
+    <Screen center>
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
-      <h1 className="text-5xl md:text-7xl font-bold text-green-500 mb-2 tracking-tight text-center font-[family-name:var(--font-chalk)]">
-        Day of Deception
-      </h1>
-      <p className="text-xl md:text-2xl text-green-300/70 mb-12 text-center">
-        An all-day social deception event
-      </p>
-
-      <div className="flex flex-col gap-4 w-full max-w-sm">
-        {user && (playing.length > 0 || hosting.length > 0) && (
-          <div className="mb-4">
-            <p className="text-green-300/70 text-sm uppercase tracking-wider mb-2">Your games</p>
-            <div className="flex flex-col gap-2">
-              {playing.map((g) => (
-                <button
-                  key={`p-${g.sessionId}`}
-                  onClick={() => rejoin(g)}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-green-900/40 border border-green-500/40 hover:bg-green-900/60 text-left transition-all"
-                >
-                  <span>
-                    <span className="block text-white font-semibold">Playing as {g.playerName}</span>
-                    <span className="block text-white/50 text-xs font-mono tracking-widest">
-                      {g.joinCode} · {g.status === "lobby" ? "waiting to start" : "in progress"}
-                    </span>
-                  </span>
-                  <span className="text-green-300 font-semibold text-sm">Rejoin →</span>
-                </button>
-              ))}
-              {hosting.map((g) => (
-                <Link
-                  key={`h-${g.sessionId}`}
-                  href={`/day-of-deception/host/${g.sessionId}`}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/15 hover:bg-white/10 transition-all"
-                >
-                  <span>
-                    <span className="block text-white font-semibold">Hosting</span>
-                    <span className="block text-white/50 text-xs font-mono tracking-widest">
-                      {g.joinCode} · {g.status === "lobby" ? "waiting to start" : "in progress"}
-                    </span>
-                  </span>
-                  <span className="text-green-300 font-semibold text-sm">Open →</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <button
-          onClick={handleCreateGame}
-          disabled={creating || authLoading}
-          className="w-full py-4 px-6 rounded-xl font-bold text-xl bg-green-600 text-white hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
-        >
-          {creating ? "Creating..." : "Host a Game"}
-        </button>
-
-        {!user && !authLoading && (
-          <button
-            onClick={() => setShowAuth(true)}
-            className="text-sm text-green-300/80 hover:text-green-200 underline underline-offset-4 text-center"
-          >
-            Sign in to host a game
-          </button>
-        )}
-
-        <div className="flex items-center gap-3 my-2">
-          <div className="flex-1 h-px bg-green-400/20" />
-          <span className="text-green-300/50 text-sm uppercase tracking-wider">or</span>
-          <div className="flex-1 h-px bg-green-400/20" />
-        </div>
-
-        <Link
-          href="/day-of-deception/play"
-          className="w-full py-4 px-6 rounded-xl font-bold text-xl bg-white/10 text-white hover:bg-white/20 transition-all text-center border border-white/20"
-        >
-          Join a Game
-        </Link>
-
-        {error && <p className="text-red-400 text-sm text-center mt-2">{error}</p>}
+      <div className="text-center">
+        <Eyebrow className="!text-[#E8C67A]">A game that lasts all day</Eyebrow>
+        <h1 className={`${display} mt-4 text-7xl leading-none text-white`}>
+          <span className="italic text-[#E8C67A]">Traitors</span>
+        </h1>
+        <p className="mx-auto mt-5 max-w-xs text-[15px] leading-relaxed text-white/55">
+          Some of your friends are secretly Traitors. Find them before the day is out.
+        </p>
       </div>
 
-      <Link
-        href="/"
-        className="mt-12 text-green-400/50 hover:text-white transition-colors text-sm"
-      >
-        Back to Game Select
+      {user && (playing.length > 0 || hosting.length > 0) && (
+        <div className="mt-10">
+          <Eyebrow className="mb-3">Your games</Eyebrow>
+          <div className="space-y-2">
+            {playing.map((g) => (
+              <button
+                key={`p-${g.sessionId}`}
+                onClick={() => rejoin(g)}
+                className="flex w-full items-center gap-4 rounded-2xl border border-[#E8C67A]/25 bg-[#E8C67A]/[0.06] px-4 py-3.5 text-left transition-colors hover:bg-[#E8C67A]/[0.1]"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-medium text-white">Playing as {g.playerName}</p>
+                  <p className="mt-0.5 text-xs text-white/45">
+                    <span className="font-mono tracking-widest">{g.joinCode}</span> · {statusLabel(g.status)}
+                  </p>
+                </div>
+                <span className="flex items-center gap-1 text-sm font-medium text-[#E8C67A]">
+                  Rejoin <Icon name="arrow" className="h-4 w-4" />
+                </span>
+              </button>
+            ))}
+            {hosting.map((g) => (
+              <Link
+                key={`h-${g.sessionId}`}
+                href={`/day-of-deception/host/${g.sessionId}`}
+                className="flex w-full items-center gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3.5 transition-colors hover:bg-white/[0.06]"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-medium text-white">Hosting</p>
+                  <p className="mt-0.5 text-xs text-white/45">
+                    <span className="font-mono tracking-widest">{g.joinCode}</span> · {statusLabel(g.status)}
+                  </p>
+                </div>
+                <span className="flex items-center gap-1 text-sm font-medium text-white/70">
+                  Open <Icon name="arrow" className="h-4 w-4" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-10 space-y-3">
+        <Link
+          href="/day-of-deception/play"
+          className="flex h-14 w-full items-center justify-center rounded-2xl bg-[#E8C67A] text-base font-semibold text-[#18130A] shadow-[0_8px_30px_-12px_rgba(232,198,122,0.6)] transition-colors hover:bg-[#F1D597]"
+        >
+          Join a game
+        </Link>
+        <Button variant="secondary" size="lg" full onClick={handleCreateGame} disabled={creating || authLoading}>
+          {creating ? "Creating" : "Host a game"}
+        </Button>
+        {!user && !authLoading && (
+          <p className="pt-1 text-center text-xs text-white/40">You&apos;ll sign in first to host.</p>
+        )}
+        {error && <p className="text-center text-sm text-rose-300">{error}</p>}
+      </div>
+
+      <Link href="/" className="mt-12 text-center text-xs text-white/30 transition-colors hover:text-white/60">
+        All Game Night games
       </Link>
-    </div>
+    </Screen>
   );
 }

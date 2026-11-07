@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { dataClient } from "@/lib/supabase/admin";
 import { verifyPlayer } from "@/lib/day-of-deception/playerAuth";
+import { MISSION_WINDOW_MS, releasePublicClue } from "@/lib/day-of-deception/clues";
 
 export async function POST(req: Request) {
   try {
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
     // Verify mission belongs to this player
     const { data: mission, error: missionError } = await db
       .from("traitors_day_missions")
-      .select("id, player_id, is_completed")
+      .select("*")
       .eq("id", missionId)
       .eq("session_id", sessionId)
       .single();
@@ -36,6 +37,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Mission already completed" }, { status: 400 });
     }
 
+    // Out of time, even if the timer job hasn't caught it yet
+    if (!mission.expired && Date.now() - new Date(mission.created_at).getTime() > MISSION_WINDOW_MS) {
+      await releasePublicClue(db, sessionId, missionId).catch((err) =>
+        console.error("Release public clue error:", err)
+      );
+      mission.expired = true;
+    }
+
+    if (mission.expired) {
+      return NextResponse.json(
+        { error: "Too late. This mission expired and everyone got a clue." },
+        { status: 400 }
+      );
+    }
+
     // Mark mission as completed
     await db
       .from("traitors_day_missions")
@@ -48,7 +64,7 @@ export async function POST(req: Request) {
       .eq("player_id", playerId)
       .eq("session_id", sessionId);
 
-    // Award +1 shadow token to the player
+    // Count completed missions (each one earns a fake tip to send)
     const { data: player } = await db
       .from("traitors_day_players")
       .select("shadow_tokens")

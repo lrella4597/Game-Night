@@ -5,7 +5,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { createClient } from "@/lib/supabase/client";
 import CustomizeTodayChat from "./CustomizeTodayChat";
 import PackEditor from "./PackEditor";
-import type { MissionPackItem, EventPackItem, ContextSummary } from "@/lib/chat/types";
+import type { MissionPackItem, EventPackItem } from "@/lib/chat/types";
+import { Avatar, Button, Card, Eyebrow, Icon, Screen, Title, display } from "../ui";
 
 interface DayHostLobbyProps {
   sessionId: string;
@@ -29,15 +30,9 @@ interface DayHostLobbyProps {
   onKickPlayer: (playerId: string) => Promise<void>;
 }
 
-export default function DayHostLobby({
-  sessionId,
-  players,
-  joinCode,
-  config,
-  onStartGame,
-  onKickPlayer,
-}: DayHostLobbyProps) {
+export default function DayHostLobby({ sessionId, players, joinCode, config, onStartGame, onKickPlayer }: DayHostLobbyProps) {
   const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
   const [joinUrl, setJoinUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [showCustomize, setShowCustomize] = useState(false);
@@ -48,7 +43,7 @@ export default function DayHostLobby({
   const [cadence, setCadence] = useState<string>(config.missionCadence);
   const [savingCadence, setSavingCadence] = useState(false);
 
-  // How often the server automatically sends Deceivers a new mission
+  // How often the server automatically sends Traitors a new mission
   async function handleCadenceChange(value: string) {
     const previous = cadence;
     setCadence(value);
@@ -63,42 +58,28 @@ export default function DayHostLobby({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    const hostname = window.location.hostname;
-    const isLocal = hostname === "localhost" || hostname === "127.0.0.1";
-
-    if (isLocal) {
-      fetch("/api/live/network-ip")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.ip) {
-            const port = window.location.port;
-            setJoinUrl(
-              `http://${data.ip}:${port}/day-of-deception/play?code=${joinCode}`
-            );
-          } else {
-            setJoinUrl(
-              `${window.location.origin}/day-of-deception/play?code=${joinCode}`
-            );
-          }
-        })
-        .catch(() =>
-          setJoinUrl(
-            `${window.location.origin}/day-of-deception/play?code=${joinCode}`
-          )
-        );
-    } else {
-      setJoinUrl(
-        `${window.location.origin}/day-of-deception/play?code=${joinCode}`
-      );
+    const origin = window.location.origin;
+    const fallback = `${origin}/day-of-deception/play?code=${joinCode}`;
+    const isLocal = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+    if (!isLocal) {
+      setJoinUrl(fallback);
+      return;
     }
+    fetch("/api/live/network-ip")
+      .then((r) => r.json())
+      .then((data) =>
+        setJoinUrl(data.ip ? `http://${data.ip}:${window.location.port}/day-of-deception/play?code=${joinCode}` : fallback)
+      )
+      .catch(() => setJoinUrl(fallback));
   }, [joinCode]);
 
   async function handleStart() {
     setStarting(true);
+    setStartError(null);
     try {
       await onStartGame();
-    } catch {
+    } catch (err) {
+      setStartError(err instanceof Error ? err.message : "Couldn't start. Try again.");
       setStarting(false);
     }
   }
@@ -111,191 +92,141 @@ export default function DayHostLobby({
   }
 
   const canStart = players.length >= 1;
-
-  const configLabels: { key: keyof typeof config; label: string }[] = [
-    { key: "deceiverCount", label: "Deceiver Count" },
-    { key: "missionCadence", label: "Mission Cadence" },
-    { key: "numberOfEvents", label: "Number of Events" },
-    { key: "discussionTimerMinutes", label: "Discussion Timer (min)" },
-    { key: "votingTimerSeconds", label: "Voting Timer (sec)" },
-    { key: "maxTokenVoteBonus", label: "Max Token Vote Bonus" },
-    { key: "maxPlayers", label: "Max Players" },
+  const settings: [string, string][] = [
+    ["Traitors", String(config.deceiverCount)],
+    ["Discussion", `${config.discussionTimerMinutes} min`],
+    ["Voting", `${config.votingTimerSeconds} sec`],
+    ["Max players", String(config.maxPlayers)],
   ];
 
   return (
-    <div className="flex flex-col items-center min-h-screen py-8 px-4 bg-[#1a1f14]">
-      {/* Header */}
-      <div className="w-full max-w-4xl flex items-center justify-between mb-8">
-        <h2 className="text-xl font-semibold text-green-400">Host Lobby</h2>
-        <div className="text-white/60 text-sm">
-          Players: {players.length}/{config.maxPlayers}
-        </div>
-      </div>
-
-      {/* Join Code + QR */}
-      <div className="flex flex-col items-center gap-6 mb-10">
-        {joinUrl && (
-          <div className="bg-white rounded-xl p-3">
-            <QRCodeSVG
-              value={joinUrl}
-              size={180}
-              fgColor="#166534"
-              bgColor="#ffffff"
-              level="M"
-            />
-          </div>
-        )}
-
-        <div className="text-center">
-          <p className="text-green-400 text-sm uppercase tracking-wider mb-2">
-            Join Code
+    <Screen wide>
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-14">
+        {/* Join */}
+        <div className="text-center lg:text-left">
+          <Eyebrow>Lobby</Eyebrow>
+          <Title size="xl" className="mt-3">
+            Scan to join.
+          </Title>
+          <p className="mt-4 text-[15px] text-white/50">
+            Already have the app? Open it and type the code.
           </p>
-          <button
-            onClick={handleCopyCode}
-            className="group relative text-5xl font-mono font-bold text-green-500 tracking-[0.3em] hover:text-green-400 transition-colors cursor-pointer"
-            title="Click to copy"
-          >
-            {joinCode}
-            <span className="absolute -right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-              {copied ? (
-                <svg
-                  className="w-6 h-6 text-green-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.5 12.75l6 6 9-13.5"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-6 h-6 text-white/40"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
-                  />
-                </svg>
-              )}
-            </span>
-          </button>
-          {copied && (
-            <p className="text-green-400 text-xs mt-1">Copied!</p>
-          )}
-        </div>
 
-        {joinUrl && (
-          <p className="text-xs text-green-400/40">{joinUrl}</p>
-        )}
-      </div>
-
-      {/* Two-column: Players + Config */}
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-        {/* Player Roster */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Players ({players.length}/{config.maxPlayers})
-          </h3>
-
-          {players.length === 0 ? (
-            <div className="text-center py-8 bg-white/5 rounded-xl border border-green-900/30">
-              <p className="text-green-300">Waiting for players to join...</p>
-              <p className="text-white/60 text-sm mt-1">
-                Share the code or QR above
+          <div className="mt-8 flex flex-col items-center gap-6 sm:flex-row lg:items-center">
+            {joinUrl && (
+              <div className="rounded-3xl bg-white p-4 shadow-[0_20px_60px_-20px_rgba(232,198,122,0.35)]">
+                <QRCodeSVG value={joinUrl} size={176} fgColor="#0A0A0D" bgColor="#ffffff" level="M" />
+              </div>
+            )}
+            <div className="text-center sm:text-left">
+              <Eyebrow>Game code</Eyebrow>
+              <button
+                onClick={handleCopyCode}
+                className="mt-2 font-mono text-5xl font-semibold tracking-[0.18em] text-[#E8C67A] transition-colors hover:text-[#F1D597]"
+                title="Copy code"
+              >
+                {joinCode}
+              </button>
+              <p className="mt-2 flex items-center justify-center gap-1.5 text-xs text-white/40 sm:justify-start">
+                <Icon name={copied ? "check" : "copy"} className="h-3.5 w-3.5" />
+                {copied ? "Copied" : "Tap to copy"}
               </p>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              {players.map((player) => (
-                <div
-                  key={player.id}
-                  className="bg-white/5 rounded-xl p-3 flex items-center gap-3 border border-green-900/30"
-                >
-                  <span
-                    className="w-4 h-4 rounded-full shrink-0"
-                    style={{ backgroundColor: player.avatarColor }}
-                  />
-                  <span className="text-white text-sm font-medium truncate flex-1">
-                    {player.displayName}
-                  </span>
-                  {!player.isConnected && (
-                    <span className="w-2 h-2 rounded-full bg-gray-500 shrink-0" />
-                  )}
-                  <button
-                    onClick={() => onKickPlayer(player.id)}
-                    className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                    title={`Kick ${player.displayName}`}
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          </div>
         </div>
 
-        {/* Config Section */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Game Settings
-          </h3>
-          <div className="bg-white/5 rounded-xl border border-green-900/30 p-4 space-y-3">
-            <div className="flex items-center justify-between py-1 gap-3">
-              <span className="text-white/60 text-sm">
-                Automatic missions
-                <span className="block text-white/40 text-xs">Sent to Deceivers all day, no tapping needed</span>
+        {/* Players + settings */}
+        <div className="space-y-4">
+          <Card>
+            <div className="flex items-baseline justify-between">
+              <h2 className={`${display} text-2xl text-white`}>Players</h2>
+              <span className="text-sm tabular-nums text-white/40">
+                {players.length} / {config.maxPlayers}
+              </span>
+            </div>
+            {players.length === 0 ? (
+              <div className="mt-4 rounded-xl border border-dashed border-white/10 py-10 text-center">
+                <p className="text-[15px] text-white/55">Waiting for people to join</p>
+                <p className="mt-1 text-sm text-white/30">They&apos;ll show up here live.</p>
+              </div>
+            ) : (
+              <ul className="mt-4 grid grid-cols-2 gap-2">
+                {players.map((p) => (
+                  <li
+                    key={p.id}
+                    className="group flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.025] py-2 pl-2 pr-1.5"
+                  >
+                    <Avatar name={p.displayName} color={p.avatarColor} size="sm" dim={!p.isConnected} />
+                    <span className="flex-1 truncate text-sm text-white/85">{p.displayName}</span>
+                    <button
+                      onClick={() => onKickPlayer(p.id)}
+                      className="rounded-full p-1.5 text-white/25 transition-colors hover:bg-rose-500/10 hover:text-rose-300"
+                      title={`Remove ${p.displayName}`}
+                    >
+                      <Icon name="x" className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card>
+            <h2 className={`${display} text-2xl text-white`}>Settings</h2>
+            <label className="mt-4 flex items-center justify-between gap-4">
+              <span>
+                <span className="block text-[15px] text-white/85">Automatic missions</span>
+                <span className="block text-xs text-white/40">Sent to Traitors all day</span>
               </span>
               <select
                 value={cadence}
                 disabled={savingCadence}
                 onChange={(e) => handleCadenceChange(e.target.value)}
-                className="bg-black/40 border border-green-700/50 rounded-lg px-2 py-1 text-white text-sm"
+                className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-[#E8C67A]/50 focus:outline-none"
               >
-                <option value="manual">Off (I&apos;ll send them)</option>
+                <option value="manual">Off</option>
                 <option value="30">Every 30 min</option>
                 <option value="45">Every 45 min</option>
                 <option value="60">Every hour</option>
               </select>
-            </div>
-            {configLabels.filter(({ key }) => key !== "missionCadence").map(({ key, label }) => (
-              <div
-                key={key}
-                className="flex items-center justify-between py-1"
-              >
-                <span className="text-white/60 text-sm">{label}</span>
-                <span className="text-white text-sm font-medium">
-                  {String(config[key])}
+            </label>
+            <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-white/[0.06] pt-4 sm:grid-cols-4">
+              {settings.map(([k, v]) => (
+                <div key={k}>
+                  <dt className="text-[11px] uppercase tracking-[0.16em] text-white/35">{k}</dt>
+                  <dd className="mt-0.5 text-[15px] text-white/85">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
+
+          {!showCustomize && !missionPack && (
+            <button
+              onClick={() => setShowCustomize(true)}
+              className="flex w-full items-center gap-4 rounded-2xl border border-[#E8C67A]/25 bg-[#E8C67A]/[0.06] p-5 text-left transition-colors hover:bg-[#E8C67A]/[0.1]"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E8C67A]/15 text-[#E8C67A]">
+                <Icon name="spark" className="h-5 w-5" />
+              </span>
+              <span className="flex-1">
+                <span className={`${display} block text-2xl text-white`}>Customize today</span>
+                <span className="block text-sm text-white/50">
+                  Tell the AI about the group and the place. It writes missions and events just for you.
                 </span>
-              </div>
-            ))}
-          </div>
+              </span>
+              <Icon name="arrow" className="h-5 w-5 text-white/40" />
+            </button>
+          )}
+          {packApplied && (
+            <p className="flex items-center gap-2 text-sm text-emerald-300">
+              <Icon name="check" className="h-4 w-4" /> Your custom missions and events are saved.
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Customize Today Section */}
       {showCustomize && !missionPack && (
-        <div className="w-full max-w-5xl mb-8">
+        <div className="mt-10">
           <CustomizeTodayChat
             sessionId={sessionId}
             onPackGenerated={(missions, events) => {
@@ -308,7 +239,7 @@ export default function DayHostLobby({
       )}
 
       {missionPack && eventPack && (
-        <div className="w-full max-w-5xl mb-8">
+        <div className="mt-10">
           <PackEditor
             missionPack={missionPack}
             eventPack={eventPack}
@@ -320,7 +251,12 @@ export default function DayHostLobby({
                 const res = await fetch("/api/day-of-deception/save-pack", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ sessionId, missionPack, eventPack, contextSummary: { theme: "", setting: "", conversationHistory: "" } }),
+                  body: JSON.stringify({
+                    sessionId,
+                    missionPack,
+                    eventPack,
+                    contextSummary: { theme: "", setting: "", conversationHistory: "" },
+                  }),
                 });
                 if (res.ok) setPackApplied(true);
               } finally {
@@ -332,34 +268,23 @@ export default function DayHostLobby({
         </div>
       )}
 
-      {/* Start Game Button */}
-      <div className="flex flex-col items-center gap-3">
-        {!showCustomize && !missionPack && (
-          <button
-            onClick={() => setShowCustomize(true)}
-            className="mb-2 bg-white/10 hover:bg-white/20 text-green-400 font-semibold py-3 px-6 rounded-xl transition-all border border-green-900/30"
-          >
-            Customize Today (Optional)
-          </button>
-        )}
-
-        {packApplied && (
-          <p className="text-green-400 text-sm mb-2">Custom pack applied!</p>
-        )}
-
-        <button
-          onClick={handleStart}
-          disabled={!canStart || starting}
-          className="bg-green-600 hover:bg-green-500 text-white font-bold text-xl py-4 px-8 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
-        >
-          {starting ? "Starting..." : "Start Game"}
-        </button>
-        {!canStart && (
-          <p className="text-green-400 text-sm">
-            Need at least 1 player to start
+      {/* Start bar */}
+      <div className="sticky bottom-0 z-20 -mx-5 mt-12 border-t border-white/[0.06] bg-[#0A0A0D]/85 px-5 py-4 backdrop-blur-xl md:-mx-8 md:px-8 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-white/45">
+            {startError ? (
+              <span className="text-rose-300">{startError}</span>
+            ) : canStart ? (
+              `${players.length} player${players.length !== 1 ? "s" : ""} ready. Roles are dealt the moment you start.`
+            ) : (
+              "Need at least 1 player to start."
+            )}
           </p>
-        )}
+          <Button size="lg" onClick={handleStart} disabled={!canStart || starting} className="min-w-48">
+            {starting ? "Dealing roles" : "Start the game"}
+          </Button>
+        </div>
       </div>
-    </div>
+    </Screen>
   );
 }

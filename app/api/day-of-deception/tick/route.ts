@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendMission } from "@/lib/day-of-deception/missionSender";
 import { adminClient } from "@/lib/supabase/admin";
+import { MISSION_WINDOW_MS, releasePublicClue } from "@/lib/day-of-deception/clues";
 
-// Automatic missions. Called every few minutes by the scheduled function in
+// Automatic missions and mission deadlines. Called every few minutes by the scheduled function in
 // netlify/functions/dod-tick.mts. For each game that's underway with a mission
 // cadence set (every 30 / 45 / 60 minutes), sends the next mission once it's
 // due, so missions keep arriving all day without the host doing anything.
+// Also expires missions a Traitor didn't finish in time, which releases a
+// public clue to everyone.
 //
 // Safe to call any time: it only ever sends a mission that is already due, so
 // extra calls can't send extra missions. Running regularly also keeps the
@@ -31,11 +34,10 @@ async function tick() {
     // "*" so a database missing the optional mission_pack column still works
     .select("*")
     .eq("status", "active")
-    .in("mission_cadence", ["30", "45", "60"])
     .gte("started_at", new Date(now - MAX_GAME_AGE_MS).toISOString());
   if (error) throw error;
 
-  const results: { sessionId: string; sent?: string; skipped?: string }[] = [];
+  const results: { sessionId: string; sent?: string; skipped?: string; expired?: number }[] = [];
   for (const session of sessions || []) {
     try {
       const { data: gs } = await supabase
@@ -45,6 +47,24 @@ async function tick() {
         .single();
       if (!gs || !ACTIVE_PHASES.includes(gs.phase)) {
         results.push({ sessionId: session.id, skipped: `phase ${gs?.phase ?? "unknown"}` });
+        continue;
+      }
+
+      // Missed missions: public clue for everyone
+      const { data: open } = await supabase
+        .from("traitors_day_missions")
+        .select("id, created_at")
+        .eq("session_id", session.id)
+        .eq("is_completed", false)
+        .eq("expired", false)
+        .lt("created_at", new Date(now - MISSION_WINDOW_MS).toISOString());
+      let expired = 0;
+      for (const m of open || []) {
+        if (await releasePublicClue(supabase, session.id, m.id)) expired++;
+      }
+
+      if (!["30", "45", "60"].includes(session.mission_cadence)) {
+        results.push({ sessionId: session.id, skipped: "manual missions", expired });
         continue;
       }
 
@@ -58,12 +78,12 @@ async function tick() {
       const lastAt = new Date(last?.created_at ?? session.started_at ?? now).getTime();
       const dueAt = lastAt + Number(session.mission_cadence) * 60 * 1000;
       if (now < dueAt - GRACE_MS) {
-        results.push({ sessionId: session.id, skipped: `next in ${Math.round((dueAt - now) / 60000)} min` });
+        results.push({ sessionId: session.id, skipped: `next in ${Math.round((dueAt - now) / 60000)} min`, expired });
         continue;
       }
 
       const sent = await sendMission(supabase, session);
-      results.push({ sessionId: session.id, sent: sent.missionId });
+      results.push({ sessionId: session.id, sent: sent.missionId, expired });
     } catch (err) {
       console.error(`dod tick: session ${session.id} failed:`, err);
       results.push({ sessionId: session.id, skipped: "error" });

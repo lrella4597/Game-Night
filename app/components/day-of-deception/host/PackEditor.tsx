@@ -19,7 +19,7 @@ const CATEGORY_COLORS: Record<MissionPackItem["category"], string> = {
 };
 
 const RISK_COLORS: Record<MissionPackItem["riskLevel"], string> = {
-  low: "bg-green-500/20 text-green-300 border-green-500/30",
+  low: "bg-emerald-400/15 text-emerald-300 border-emerald-400/25",
   medium: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
   high: "bg-red-500/20 text-red-300 border-red-500/30",
 };
@@ -105,7 +105,7 @@ export default function PackEditor({
       {/* ── Mission Pack Section ───────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-green-400">
+          <h3 className="font-[family-name:var(--font-display)] text-2xl text-white">
             Mission Pack ({missionPack.length})
           </h3>
           <div className="flex gap-2 text-xs text-white/40">
@@ -125,10 +125,10 @@ export default function PackEditor({
           {missionPack.map((mission) => (
             <div
               key={mission.id}
-              className={`bg-white/5 rounded-xl border p-3 transition-all ${
+              className={`bg-white/5 rounded-2xl border p-3 transition-all ${
                 mission.locked
-                  ? "border-green-500/40 bg-green-900/10"
-                  : "border-green-900/30"
+                  ? "border-[#E8C67A]/40 bg-[#E8C67A]/[0.05]"
+                  : "border-white/[0.08]"
               }`}
             >
               {editingMissionId === mission.id ? (
@@ -147,7 +147,7 @@ export default function PackEditor({
                         setEditingMissionId(null);
                       }
                     }}
-                    className="w-full bg-[#141a0f] text-white text-sm px-3 py-2 rounded-lg border border-green-600/50 focus:outline-none focus:ring-2 focus:ring-green-600 resize-none"
+                    className="w-full bg-black/30 text-white text-sm px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[#E8C67A]/50 resize-none"
                     rows={2}
                     autoFocus
                   />
@@ -190,7 +190,7 @@ export default function PackEditor({
                       onClick={() => toggleMissionLock(mission.id)}
                       className={`p-1.5 rounded-lg transition-all ${
                         mission.locked
-                          ? "text-green-400 bg-green-500/10"
+                          ? "text-[#E8C67A] bg-[#E8C67A]/10"
                           : "text-white/30 hover:text-white/60 hover:bg-white/5"
                       }`}
                       title={mission.locked ? "Unlock" : "Lock"}
@@ -278,7 +278,7 @@ export default function PackEditor({
       {/* ── Event Pack Section ─────────────────────────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-green-400">
+          <h3 className="font-[family-name:var(--font-display)] text-2xl text-white">
             Event Pack ({eventPack.length})
           </h3>
         </div>
@@ -287,10 +287,10 @@ export default function PackEditor({
           {eventPack.map((event) => (
             <div
               key={event.id}
-              className={`bg-white/5 rounded-xl border p-4 transition-all ${
+              className={`bg-white/5 rounded-2xl border p-4 transition-all ${
                 event.locked
-                  ? "border-green-500/40 bg-green-900/10"
-                  : "border-green-900/30"
+                  ? "border-[#E8C67A]/40 bg-[#E8C67A]/[0.05]"
+                  : "border-white/[0.08]"
               }`}
             >
               {editingEventId === event.id ? (
@@ -300,7 +300,7 @@ export default function PackEditor({
                     type="text"
                     value={editEventName}
                     onChange={(e) => setEditEventName(e.target.value)}
-                    className="w-full bg-[#141a0f] text-white text-sm px-3 py-2 rounded-lg border border-green-600/50 focus:outline-none focus:ring-2 focus:ring-green-600"
+                    className="w-full bg-black/30 text-white text-sm px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[#E8C67A]/50"
                     placeholder="Event name"
                     autoFocus
                   />
@@ -313,13 +313,13 @@ export default function PackEditor({
                         setEditingEventId(null);
                       }
                     }}
-                    className="w-full bg-[#141a0f] text-white text-sm px-3 py-2 rounded-lg border border-green-600/50 focus:outline-none focus:ring-2 focus:ring-green-600 resize-none"
+                    className="w-full bg-black/30 text-white text-sm px-3 py-2 rounded-lg border border-white/10 focus:outline-none focus:border-[#E8C67A]/50 resize-none"
                     rows={3}
                     placeholder="Instructions"
                   />
                   <button
                     onClick={() => saveEventEdit(event.id)}
-                    className="px-3 py-1.5 text-xs rounded-lg bg-green-600 text-white hover:bg-green-500 transition-all"
+                    className="px-3 py-1.5 text-xs rounded-lg bg-[#E8C67A] text-[#18130A] hover:bg-[#F1D597] transition-all"
                   >
                     Save
                   </button>
@@ -342,7 +342,7 @@ export default function PackEditor({
                     {event.deceiverSecretMission && (
                       <div className="mt-2 px-2 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg">
                         <p className="text-xs text-red-300">
-                          <span className="font-semibold">Deceiver Goal:</span>{" "}
+                          <span className="font-semibold">Traitor Goal:</span>{" "}
                           {event.deceiverSecretMission}
                         </p>
                       </div>
@@ -368,7 +368,7 @@ export default function PackEditor({
                       onClick={() => toggleEventLock(event.id)}
                       className={`p-1.5 rounded-lg transition-all ${
                         event.locked
-                          ? "text-green-400 bg-green-500/10"
+                          ? "text-[#E8C67A] bg-[#E8C67A]/10"
                           : "text-white/30 hover:text-white/60 hover:bg-white/5"
                       }`}
                       title={event.locked ? "Unlock" : "Lock"}
@@ -458,11 +458,11 @@ export default function PackEditor({
         <button
           onClick={onApply}
           disabled={applying || missionPack.length === 0 || eventPack.length === 0}
-          className="px-8 py-4 rounded-xl font-bold text-lg bg-green-600 hover:bg-green-500 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-green-900/30"
+          className="px-8 py-4 rounded-2xl font-bold text-lg bg-[#E8C67A] text-[#18130A] hover:bg-[#F1D597] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
         >
           {applying ? (
             <span className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#18130A]"></div>
               Applying...
             </span>
           ) : (

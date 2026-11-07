@@ -16,13 +16,13 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
     name: "The Trust Circle",
     instructions: "Go around the group. Each person says who they trust the most and why. No defensiveness allowed!",
     durationMinutes: 10,
-    deceiverSecretMission: "Name a loyal player as the person you trust least to plant seeds of doubt.",
+    deceiverSecretMission: "Name a faithful player as the person you trust least to plant seeds of doubt.",
   },
   {
     name: "Speed Alibi",
     instructions: "Pair up randomly. You have 2 minutes to create a fake alibi for where you both were last night. The group votes on the most convincing pair.",
     durationMinutes: 12,
-    deceiverSecretMission: "Try to pair with a loyal player and subtly make them look suspicious.",
+    deceiverSecretMission: "Try to pair with a faithful player and subtly make them look suspicious.",
   },
   {
     name: "The Interrogation",
@@ -32,15 +32,15 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   },
   {
     name: "Secret Ballot",
-    instructions: "Everyone writes down anonymously who they think is a deceiver and why. The host reads them aloud (without revealing authors).",
+    instructions: "Everyone writes down anonymously who they think is a traitor and why. The host reads them aloud (without revealing authors).",
     durationMinutes: 8,
-    deceiverSecretMission: "Write a convincing accusation against an innocent loyal player.",
+    deceiverSecretMission: "Write a convincing accusation against an innocent faithful player.",
   },
   {
     name: "The Alliance",
     instructions: "Form groups of 3. Each group must agree on one person outside their group who seems suspicious. Present your case to everyone.",
     durationMinutes: 12,
-    deceiverSecretMission: "Guide your group to suspect a loyal player.",
+    deceiverSecretMission: "Guide your group to suspect a faithful player.",
   },
   {
     name: "Desert Island",
@@ -57,7 +57,7 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
     name: "Story Chain",
     instructions: "Create a story together — each person adds one sentence. The catch: the story must be about a group of friends with a secret among them.",
     durationMinutes: 10,
-    deceiverSecretMission: "Steer the story to make a loyal player's character seem suspicious.",
+    deceiverSecretMission: "Steer the story to make a faithful player's character seem suspicious.",
   },
   {
     name: "The Debate",
@@ -67,19 +67,19 @@ export const EVENT_TEMPLATES: EventTemplate[] = [
   },
   {
     name: "Mafia Mind Games",
-    instructions: "Everyone stands in a circle. Look someone in the eye for 5 seconds. Then everyone simultaneously points at who they think is a deceiver.",
+    instructions: "Everyone stands in a circle. Look someone in the eye for 5 seconds. Then everyone simultaneously points at who they think is a traitor.",
     durationMinutes: 5,
-    deceiverSecretMission: "Point at a loyal player who seems nervous.",
+    deceiverSecretMission: "Point at a faithful player who seems nervous.",
   },
   {
     name: "Compliment Circle",
     instructions: "Go around and give a genuine compliment to the person on your left. Then share one thing you find suspicious about the person on your right.",
     durationMinutes: 10,
-    deceiverSecretMission: "Use your 'suspicious' comment to plant real doubt about a loyal player.",
+    deceiverSecretMission: "Use your 'suspicious' comment to plant real doubt about a faithful player.",
   },
   {
     name: "Body Language Detective",
-    instructions: "Everyone takes turns making a statement like 'I am loyal.' The group tries to spot deception through body language.",
+    instructions: "Everyone takes turns making a statement like 'I am faithful.' The group tries to spot deception through body language.",
     durationMinutes: 12,
     deceiverSecretMission: "Practice your poker face — deliver your lie with absolute confidence.",
   },

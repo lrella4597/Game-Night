@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Avatar, Button, Card, Eyebrow, Icon, LoadingScreen, Screen, Timer, Title, display } from "../ui";
 
 interface DayHostEventActiveProps {
   eventData: {
@@ -8,108 +9,102 @@ interface DayHostEventActiveProps {
     instructions: string;
     durationMinutes: number;
   } | null;
-  onEndEvent: () => Promise<void>;
+  players: { id: string; displayName: string; avatarColor: string }[];
+  onEndEvent: (winnerIds: string[]) => Promise<void>;
   timerRemaining: number;
   timerRunning: boolean;
 }
 
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
-export default function DayHostEventActive({
-  eventData,
-  onEndEvent,
-  timerRemaining,
-  timerRunning,
-}: DayHostEventActiveProps) {
+export default function DayHostEventActive({ eventData, players, onEndEvent, timerRemaining, timerRunning }: DayHostEventActiveProps) {
   const [ending, setEnding] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [winners, setWinners] = useState<string[]>([]);
 
   async function handleEndEvent() {
     setEnding(true);
     try {
-      await onEndEvent();
+      await onEndEvent(winners);
     } catch {
       setEnding(false);
     }
   }
 
-  if (!eventData) {
+  function toggleWinner(id: string) {
+    setWinners((w) => (w.includes(id) ? w.filter((x) => x !== id) : [...w, id]));
+  }
+
+  if (!eventData) return <LoadingScreen label="Loading the event" />;
+
+  if (picking) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen py-8 px-4 bg-[#1a1f14]">
-        <p className="text-white/40 text-lg">No event data available.</p>
-      </div>
+      <Screen wide tone="gold">
+        <div className="mx-auto max-w-2xl">
+          <button onClick={() => setPicking(false)} className="text-sm text-white/45 hover:text-white">
+            ← Back to the event
+          </button>
+          <Title className="mt-4">Who won?</Title>
+          <p className="mt-2 text-[15px] text-white/55">
+            Each winner gets a secret clue on their phone. One other random player gets an anonymous tip.
+          </p>
+
+          <div className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {players.map((p) => {
+              const on = winners.includes(p.id);
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => toggleWinner(p.id)}
+                  className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-all active:scale-[0.98] ${
+                    on ? "border-[#E8C67A] bg-[#E8C67A]/15 ring-1 ring-[#E8C67A]/40" : "border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06]"
+                  }`}
+                >
+                  <Avatar name={p.displayName} color={p.avatarColor} size="sm" />
+                  <span className={`flex-1 truncate text-[15px] ${on ? "text-white" : "text-white/75"}`}>
+                    {p.displayName}
+                  </span>
+                  {on && <Icon name="trophy" className="h-4 w-4 text-[#E8C67A]" />}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="sticky bottom-4 mt-8 flex gap-2">
+            <Button size="lg" full onClick={handleEndEvent} disabled={ending}>
+              {ending
+                ? "Handing out clues"
+                : winners.length > 0
+                  ? `Finish · ${winners.length} winner${winners.length !== 1 ? "s" : ""}`
+                  : "Finish with no winner"}
+            </Button>
+          </div>
+        </div>
+      </Screen>
     );
   }
 
-  const isLowTime = timerRemaining <= 30 && timerRunning;
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-8 px-4 bg-[#1a1f14]">
-      {/* Event Icon */}
-      <div className="w-16 h-16 rounded-full bg-green-600/20 border-2 border-green-500/50 flex items-center justify-center mb-6">
-        <svg
-          className="w-8 h-8 text-green-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
-          />
-        </svg>
-      </div>
-
-      {/* Event Name */}
-      <h1 className="text-3xl md:text-4xl font-bold text-green-400 mb-2 text-center">
-        {eventData.eventName}
-      </h1>
-
-      {/* Duration Label */}
-      <p className="text-white/40 text-sm mb-6">
-        {eventData.durationMinutes} minute
-        {eventData.durationMinutes !== 1 ? "s" : ""}
-      </p>
-
-      {/* Timer */}
-      <div className="mb-8">
-        <div
-          className={`text-6xl font-mono font-bold ${
-            isLowTime ? "text-red-400 animate-pulse" : "text-white"
-          }`}
-        >
-          {formatTime(timerRemaining)}
+    <Screen wide tone="gold">
+      <div className="text-center pt-4">
+        <Eyebrow className="!text-[#E8C67A]">Live event</Eyebrow>
+        <h1 className={`${display} mt-3 text-5xl md:text-7xl leading-none text-white`}>{eventData.eventName}</h1>
+        <div className="mt-8">
+          <Timer seconds={timerRemaining} running={timerRunning} size="xl" />
         </div>
-        {!timerRunning && timerRemaining > 0 && (
-          <p className="text-white/30 text-sm text-center mt-2">
-            Timer paused
-          </p>
-        )}
       </div>
 
-      {/* Instructions Card */}
-      <div className="w-full max-w-lg bg-white/5 rounded-xl border border-green-900/30 p-6 mb-8">
-        <h3 className="text-sm font-semibold text-green-400 uppercase tracking-wider mb-3">
-          Instructions
-        </h3>
-        <p className="text-white/80 text-base leading-relaxed whitespace-pre-wrap">
-          {eventData.instructions}
+      <Card className="mx-auto mt-10 max-w-2xl">
+        <Eyebrow>How it works</Eyebrow>
+        <p className="mt-3 text-lg leading-relaxed text-white/85 whitespace-pre-wrap">{eventData.instructions}</p>
+        <p className="mt-4 flex items-center gap-2 text-sm text-[#E8C67A]/90">
+          <Icon name="trophy" className="h-4 w-4" /> Winners get a secret clue.
         </p>
-      </div>
+      </Card>
 
-      {/* End Event Button */}
-      <button
-        onClick={handleEndEvent}
-        disabled={ending}
-        className="bg-green-600 hover:bg-green-500 text-white font-bold text-xl py-4 px-8 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
-      >
-        {ending ? "Ending..." : "End Event"}
-      </button>
-    </div>
+      <div className="mt-10 text-center">
+        <Button size="lg" className="min-w-56" onClick={() => setPicking(true)}>
+          End event and pick winners
+        </Button>
+      </div>
+    </Screen>
   );
 }
