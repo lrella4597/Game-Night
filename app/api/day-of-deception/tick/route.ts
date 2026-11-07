@@ -27,7 +27,8 @@ async function tick() {
 
   const { data: sessions, error } = await supabase
     .from("traitors_day_sessions")
-    .select("id, mission_cadence, mission_pack, started_at")
+    // "*" so a database missing the optional mission_pack column still works
+    .select("*")
     .eq("status", "active")
     .in("mission_cadence", ["30", "45", "60"])
     .gte("started_at", new Date(now - MAX_GAME_AGE_MS).toISOString());
