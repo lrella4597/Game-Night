@@ -8,6 +8,8 @@ export interface StoredPlayer {
   playerId: string;
   playerName: string;
   playerToken: string;
+  /** The game's join code, so a scanned QR for this same game goes straight in */
+  joinCode?: string;
 }
 
 const LAST_SESSION_KEY = "day-of-deception-last-session";
@@ -17,6 +19,7 @@ function keys(sessionId: string) {
     id: `day-of-deception-player-id-${sessionId}`,
     name: `day-of-deception-player-name-${sessionId}`,
     token: `day-of-deception-player-token-${sessionId}`,
+    code: `day-of-deception-join-code-${sessionId}`,
   };
 }
 
@@ -34,6 +37,7 @@ export function savePlayer(sessionId: string, player: StoredPlayer) {
     localStorage.setItem(k.id, player.playerId);
     localStorage.setItem(k.name, player.playerName);
     localStorage.setItem(k.token, player.playerToken);
+    if (player.joinCode) localStorage.setItem(k.code, player.joinCode.toUpperCase());
     localStorage.setItem(LAST_SESSION_KEY, sessionId);
   }, undefined);
 }
@@ -50,7 +54,8 @@ export function loadPlayer(sessionId: string): StoredPlayer | null {
   const playerToken = read(k.token);
   if (!playerId || !playerName || !playerToken) return null;
 
-  const player = { playerId, playerName, playerToken };
+  const joinCode = safe(() => localStorage.getItem(k.code), null) ?? undefined;
+  const player = { playerId, playerName, playerToken, joinCode };
   savePlayer(sessionId, player); // migrate to localStorage
   return player;
 }
@@ -58,7 +63,7 @@ export function loadPlayer(sessionId: string): StoredPlayer | null {
 export function clearPlayer(sessionId: string) {
   const k = keys(sessionId);
   safe(() => {
-    for (const key of [k.id, k.name, k.token]) {
+    for (const key of [k.id, k.name, k.token, k.code]) {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
     }
@@ -100,4 +105,21 @@ export function getLastSessionId(): string | null {
   const sessionId = safe(() => localStorage.getItem(LAST_SESSION_KEY), null);
   if (!sessionId) return null;
   return loadPlayer(sessionId) ? sessionId : null;
+}
+
+/** The game on this phone with this join code, if the player is stored for it. */
+export function findSessionByJoinCode(joinCode: string): string | null {
+  const code = joinCode.trim().toUpperCase();
+  if (!code) return null;
+  return safe(() => {
+    const prefix = "day-of-deception-join-code-";
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(prefix) && localStorage.getItem(key) === code) {
+        const sessionId = key.slice(prefix.length);
+        if (loadPlayer(sessionId)) return sessionId;
+      }
+    }
+    return null;
+  }, null);
 }
