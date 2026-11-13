@@ -181,7 +181,7 @@ export default function TraitorsDayHostPage() {
       <Title className="mt-2">Run the game.</Title>
       {playingToo && (
         <Link
-          href={`/day-of-deception/play`}
+          href={`/day-of-deception/play?code=${encodeURIComponent(joinCode)}`}
           className="mt-4 flex items-center gap-2 text-sm text-[#E8C67A] hover:text-[#F1D597]"
         >
           <Icon name="arrow" className="h-4 w-4" />
