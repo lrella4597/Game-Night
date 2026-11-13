@@ -16,7 +16,8 @@ import { MISSION_WINDOW_MS, releasePublicClue } from "@/lib/day-of-deception/clu
 // Supabase project from pausing for inactivity.
 
 const ACTIVE_PHASES = ["freeplay", "event_active"];
-const MAX_GAME_AGE_MS = 24 * 60 * 60 * 1000;
+// Long enough for a weekend game (Friday to Sunday)
+const MAX_GAME_AGE_MS = 4 * 24 * 60 * 60 * 1000;
 // A tick runs every 5 minutes; send when within a minute of due so a mission
 // set for every 30 minutes doesn't slip to 35.
 const GRACE_MS = 60 * 1000;
@@ -49,6 +50,11 @@ async function tick() {
         results.push({ sessionId: session.id, skipped: `phase ${gs?.phase ?? "unknown"}` });
         continue;
       }
+      // Good night: no missions and no mission timers until Good morning
+      if (session.missions_paused) {
+        results.push({ sessionId: session.id, skipped: "paused overnight" });
+        continue;
+      }
 
       // Missed missions: public clue for everyone
       const { data: open } = await supabase
@@ -72,6 +78,8 @@ async function tick() {
         .from("traitors_day_missions")
         .select("created_at")
         .eq("session_id", session.id)
+        // Event objectives don't count toward the mission schedule
+        .not("mission_category", "like", "event:%")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();

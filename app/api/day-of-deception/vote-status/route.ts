@@ -33,26 +33,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Count total players
-    const { count: total } = await db
-      .from("traitors_day_players")
-      .select("id", { count: "exact", head: true })
-      .eq("session_id", sessionId);
-
-    // Count players who have voted
-    const { count: voted } = await db
-      .from("traitors_day_players")
-      .select("id", { count: "exact", head: true })
-      .eq("session_id", sessionId)
-      .eq("vote_locked", true);
-
-    const totalCount = total ?? 0;
-    const votedCount = voted ?? 0;
+    // Only players still in the game vote
+    const { data: rows } = await db.from("traitors_day_players").select("*").eq("session_id", sessionId);
+    const living = (rows || []).filter((p) => !p.eliminated);
+    const total = living.length;
+    const voted = living.filter((p) => p.vote_locked).length;
 
     return NextResponse.json({
-      total: totalCount,
-      voted: votedCount,
-      remaining: totalCount - votedCount,
+      total,
+      voted,
+      remaining: total - voted,
+      // Names the host voting screen reads
+      votedCount: voted,
+      totalVoters: total,
     });
   } catch (err) {
     console.error("Vote status error:", err);

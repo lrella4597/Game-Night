@@ -8,18 +8,35 @@ import AuthModal from "@/app/components/auth/AuthModal";
 import { savePlayer } from "@/lib/day-of-deception/playerStorage";
 import { Button, Eyebrow, Icon, Screen, display } from "@/app/components/day-of-deception/ui";
 
-interface PlayingGame {
+interface MyGame {
   sessionId: string;
   joinCode: string;
   status: string;
-  playerId: string;
-  playerName: string;
-  playerToken: string;
+  createdAt: string;
+  isHost: boolean;
+  player: { playerId: string; playerName: string; playerToken: string } | null;
 }
-interface HostingGame {
-  sessionId: string;
-  joinCode: string;
-  status: string;
+
+// Games a player removed from their list on this phone
+const HIDDEN_KEY = "dod_hidden_games";
+function loadHidden(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function when(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const today = new Date();
+  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (d.toDateString() === today.toDateString()) return `Today ${time}`;
+  const y = new Date(today);
+  y.setDate(today.getDate() - 1);
+  if (d.toDateString() === y.toDateString()) return `Yesterday ${time}`;
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
 export default function TraitorsDayLandingPage() {
@@ -28,8 +45,8 @@ export default function TraitorsDayLandingPage() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAuth, setShowAuth] = useState(false);
-  const [playing, setPlaying] = useState<PlayingGame[]>([]);
-  const [hosting, setHosting] = useState<HostingGame[]>([]);
+  const [games, setGames] = useState<MyGame[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   // Games this account is still in, so leaving never means losing your spot
   useEffect(() => {
@@ -39,8 +56,8 @@ export default function TraitorsDayLandingPage() {
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
-        setPlaying(d.playing || []);
-        setHosting(d.hosting || []);
+        const hidden = loadHidden();
+        setGames((d.games || []).filter((g: MyGame) => !hidden.includes(g.sessionId)));
       })
       .catch(() => {});
     return () => {
@@ -48,14 +65,32 @@ export default function TraitorsDayLandingPage() {
     };
   }, [user]);
 
-  function rejoin(g: PlayingGame) {
-    savePlayer(g.sessionId, {
-      playerId: g.playerId,
-      playerName: g.playerName,
-      playerToken: g.playerToken,
-      joinCode: g.joinCode,
-    });
-    router.push(`/day-of-deception/play/${g.sessionId}`);
+  // Playing (even if also hosting): the player screen, which has a Host button
+  function open(g: MyGame) {
+    if (g.player) {
+      savePlayer(g.sessionId, { ...g.player, joinCode: g.joinCode });
+      router.push(`/day-of-deception/play/${g.sessionId}`);
+    } else {
+      router.push(`/day-of-deception/host/${g.sessionId}`);
+    }
+  }
+
+  async function remove(g: MyGame) {
+    setConfirmDelete(null);
+    setGames((list) => list.filter((x) => x.sessionId !== g.sessionId));
+    if (g.isHost) {
+      await fetch("/api/day-of-deception/delete-game", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: g.sessionId }),
+      }).catch(() => {});
+    } else {
+      try {
+        localStorage.setItem(HIDDEN_KEY, JSON.stringify([...loadHidden(), g.sessionId]));
+      } catch {
+        // Private mode: it just comes back next time
+      }
+    }
   }
 
   async function handleCreateGame() {
@@ -86,7 +121,9 @@ export default function TraitorsDayLandingPage() {
     }
   }
 
-  const statusLabel = (st: string) => (st === "lobby" ? "Waiting to start" : "In progress");
+  const statusLabel = (st: string) => (st === "lobby" ? "Waiting to start" : st === "finished" ? "Ended" : "In progress");
+  const title = (g: MyGame) =>
+    g.isHost && g.player ? `Hosting and playing as ${g.player.playerName}` : g.player ? `Playing as ${g.player.playerName}` : "Hosting";
 
   return (
     <Screen center>
@@ -101,44 +138,57 @@ export default function TraitorsDayLandingPage() {
         </p>
       </div>
 
-      {user && (playing.length > 0 || hosting.length > 0) && (
+      {user && games.length > 0 && (
         <div className="mt-10">
           <Eyebrow className="mb-3">Your games</Eyebrow>
           <div className="space-y-2">
-            {playing.map((g) => (
-              <button
-                key={`p-${g.sessionId}`}
-                onClick={() => rejoin(g)}
-                className="flex w-full items-center gap-4 rounded-2xl border border-[#E8C67A]/25 bg-[#E8C67A]/[0.06] px-4 py-3.5 text-left transition-colors hover:bg-[#E8C67A]/[0.1]"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-medium text-white">Playing as {g.playerName}</p>
-                  <p className="mt-0.5 text-xs text-white/45">
-                    <span className="font-mono tracking-widest">{g.joinCode}</span> · {statusLabel(g.status)}
-                  </p>
+            {games.map((g) => {
+              const live = g.status !== "finished";
+              return (
+                <div
+                  key={g.sessionId}
+                  className={`rounded-2xl border px-4 py-3.5 ${
+                    live ? "border-[#E8C67A]/25 bg-[#E8C67A]/[0.06]" : "border-white/[0.08] bg-white/[0.03]"
+                  }`}
+                >
+                  {confirmDelete === g.sessionId ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm text-white/70">
+                        {g.isHost ? "Delete this game for everyone?" : "Remove it from your list?"}
+                      </p>
+                      <div className="flex shrink-0 gap-3 text-sm">
+                        <button onClick={() => setConfirmDelete(null)} className="text-white/50">
+                          Cancel
+                        </button>
+                        <button onClick={() => remove(g)} className="font-medium text-rose-300">
+                          {g.isHost ? "Delete" : "Remove"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => open(g)} className="min-w-0 flex-1 text-left">
+                        <p className={`truncate text-[15px] font-medium ${live ? "text-white" : "text-white/60"}`}>{title(g)}</p>
+                        <p className="mt-0.5 text-xs text-white/45">
+                          <span className="font-mono tracking-widest">{g.joinCode}</span> · {statusLabel(g.status)} ·{" "}
+                          {when(g.createdAt)}
+                        </p>
+                      </button>
+                      <button onClick={() => open(g)} className="flex items-center gap-1 text-sm font-medium text-[#E8C67A]">
+                        Open <Icon name="arrow" className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(g.sessionId)}
+                        aria-label={g.isHost ? "Delete game" : "Remove from list"}
+                        className="-mr-1 p-1 text-white/30 hover:text-rose-300"
+                      >
+                        <Icon name="x" className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <span className="flex items-center gap-1 text-sm font-medium text-[#E8C67A]">
-                  Rejoin <Icon name="arrow" className="h-4 w-4" />
-                </span>
-              </button>
-            ))}
-            {hosting.map((g) => (
-              <Link
-                key={`h-${g.sessionId}`}
-                href={`/day-of-deception/host/${g.sessionId}`}
-                className="flex w-full items-center gap-4 rounded-2xl border border-white/[0.08] bg-white/[0.035] px-4 py-3.5 transition-colors hover:bg-white/[0.06]"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-medium text-white">Hosting</p>
-                  <p className="mt-0.5 text-xs text-white/45">
-                    <span className="font-mono tracking-widest">{g.joinCode}</span> · {statusLabel(g.status)}
-                  </p>
-                </div>
-                <span className="flex items-center gap-1 text-sm font-medium text-white/70">
-                  Open <Icon name="arrow" className="h-4 w-4" />
-                </span>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

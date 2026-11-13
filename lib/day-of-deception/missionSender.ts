@@ -36,12 +36,14 @@ export async function sendMission(
 
   let targetPlayerId = requestedPlayerId;
   if (!targetPlayerId) {
-    const { data: traitors } = await supabase
+    const { data: rows } = await supabase
       .from("traitors_day_players")
-      .select("id")
+      .select("*")
       .eq("session_id", sessionId)
       .eq("role", "traitor");
-    if (!traitors || traitors.length === 0) throw new Error("No Traitors found");
+    // Banished Traitors are out: no more missions
+    const traitors = (rows || []).filter((t) => !t.eliminated);
+    if (traitors.length === 0) throw new Error("No Traitors found");
 
     // Spread missions evenly: pick among the Traitors with the fewest so far
     const counts = traitors.map((t) => ({
@@ -96,8 +98,9 @@ export async function sendMission(
 
   // Keep the mission itself off the lock screen, where others could see it
   await sendPushToPlayer(supabase, sessionId, targetPlayerId, {
-    title: "🕵️ New secret mission",
-    body: "You have 30 minutes. Miss it and everyone gets a clue. Don't let anyone see your screen.",
+    // Generic on purpose: lock screens are easy to glance at
+    title: "🔒 Check My secret",
+    body: "Make sure nobody's looking first.",
     tag: "mission",
   });
 
