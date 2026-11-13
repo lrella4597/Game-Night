@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useDayHostControls } from "@/lib/day-of-deception/useHostControls";
 import { useGameChanges } from "@/lib/day-of-deception/useGameChanges";
 import { DAY_HOST_EVENTS } from "@/lib/day-of-deception/channelEvents";
@@ -161,6 +162,12 @@ export default function HostPanel({ sessionId, broadcast, mode, myPlayerId }: Ho
           <Button full className="mt-4" disabled={b("start") || state.players.length < 2} onClick={() => run("start", controls.startGame)}>
             {b("start") ? "Dealing roles" : "Start the game"}
           </Button>
+          <Link
+            href={`/day-of-deception/host/${sessionId}`}
+            className="mt-3 flex h-11 w-full items-center justify-center rounded-xl border border-white/10 text-sm font-medium text-white/75 hover:text-white"
+          >
+            QR code and Customize Today
+          </Link>
         </Card>
       )}
 

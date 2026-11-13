@@ -24,6 +24,8 @@ function JoinForm() {
   const prefillCode = searchParams.get("code") || "";
   // Sent here because this phone is signed out: don't bounce back to the game
   const needsSignIn = searchParams.get("signin") === "1";
+  // Tapped "Join a game" on purpose: never bounce back into an older game
+  const joinNew = searchParams.get("new") === "1";
   const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth();
 
   const [code, setCode] = useState(prefillCode);
@@ -46,17 +48,17 @@ function JoinForm() {
     }
     const last = getLastSessionId();
     if (!last) return;
-    if (!prefillCode && !needsSignIn && allowAutoResume()) {
+    if (!prefillCode && !needsSignIn && !joinNew && allowAutoResume()) {
       router.replace(`/day-of-deception/play/${last}`);
     } else {
       setLastSessionId(last);
     }
-  }, [prefillCode, needsSignIn, router]);
+  }, [prefillCode, needsSignIn, joinNew, router]);
 
   // Signed in but this phone has no saved game (new phone, home screen app):
   // ask the server which game this account is in.
   useEffect(() => {
-    if (!user || prefillCode) return;
+    if (!user || prefillCode || joinNew) return;
     // Signed back in on a phone that already knows its game
     const last = getLastSessionId();
     if (last) {
@@ -83,7 +85,7 @@ function JoinForm() {
     return () => {
       cancelled = true;
     };
-  }, [user, prefillCode, needsSignIn, router]);
+  }, [user, prefillCode, needsSignIn, joinNew, router]);
 
   const suggestedName = googleFirstName(user?.user_metadata);
   const displayName = nameEdited ? name : name || suggestedName;
@@ -212,7 +214,7 @@ function JoinForm() {
       <div className="mt-10 flex flex-col items-center gap-3 text-sm">
         {lastSessionId && (
           <Link href={`/day-of-deception/play/${lastSessionId}`} className="font-medium text-[#E8C67A] hover:text-[#F1D597]">
-            {prefillCode ? "Go back to your other game" : "Back to my current game"}
+            {prefillCode ? "Go back to your other game" : "Back to my last game"}
           </Link>
         )}
         <Link href="/day-of-deception" className="text-white/40 transition-colors hover:text-white">

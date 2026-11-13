@@ -174,6 +174,14 @@ export default function TraitorsDayLandingPage() {
                           {when(g.createdAt)}
                         </p>
                       </button>
+                      {g.isHost && g.player && live && (
+                        <Link
+                          href={`/day-of-deception/host/${g.sessionId}`}
+                          className="shrink-0 rounded-full border border-white/15 px-2.5 py-1 text-xs font-medium text-white/70 hover:text-white"
+                        >
+                          {g.status === "lobby" ? "QR & setup" : "Host screen"}
+                        </Link>
+                      )}
                       <button onClick={() => open(g)} className="flex items-center gap-1 text-sm font-medium text-[#E8C67A]">
                         Open <Icon name="arrow" className="h-4 w-4" />
                       </button>
@@ -195,7 +203,7 @@ export default function TraitorsDayLandingPage() {
 
       <div className="mt-10 space-y-3">
         <Link
-          href="/day-of-deception/play"
+          href="/day-of-deception/play?new=1"
           className="flex h-14 w-full items-center justify-center rounded-2xl bg-[#E8C67A] text-base font-semibold text-[#18130A] shadow-[0_8px_30px_-12px_rgba(232,198,122,0.6)] transition-colors hover:bg-[#F1D597]"
         >
           Join a game
