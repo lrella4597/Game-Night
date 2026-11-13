@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { formatClueText } from "@/lib/day-of-deception/clueText";
 import Link from "next/link";
 import { Card, Eyebrow, Icon, LoadingScreen, Pill, Screen, Title } from "../ui";
 
@@ -10,9 +11,20 @@ interface DayPlayerEndProps {
     players: { id: string; displayName: string; role: string; shadowTokens: number }[];
   } | null;
   myRole: "traitor" | "faithful" | null;
+  // Query string for /api/day-of-deception/recap
+  recapQuery?: string;
 }
 
-export default function DayPlayerEnd({ endgameData, myRole }: DayPlayerEndProps) {
+export default function DayPlayerEnd({ endgameData, myRole, recapQuery }: DayPlayerEndProps) {
+  const [recap, setRecap] = useState<{ at: string; text: string }[] | null>(null);
+  useEffect(() => {
+    if (!recapQuery) return;
+    fetch(`/api/day-of-deception/recap?${recapQuery}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { items: [] }))
+      .then((d) => setRecap(d.items ?? []))
+      .catch(() => setRecap([]));
+  }, [recapQuery]);
+
   if (!endgameData) return <LoadingScreen label="Loading the results" />;
 
   const { winner, players } = endgameData;
@@ -62,6 +74,22 @@ export default function DayPlayerEnd({ endgameData, myRole }: DayPlayerEndProps)
           ))}
         </ul>
       </Card>
+
+      {recap && recap.length > 0 && (
+        <Card className="mt-3">
+          <Eyebrow>What really happened</Eyebrow>
+          <ol className="mt-4 space-y-3 border-l border-white/10 pl-4">
+            {recap.map((r, i) => (
+              <li key={i} className="text-sm leading-snug text-white/75">
+                <span className="mr-2 text-xs tabular-nums text-white/35">
+                  {new Date(r.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                </span>
+                {formatClueText(r.text)}
+              </li>
+            ))}
+          </ol>
+        </Card>
+      )}
 
       <div className="mt-10 text-center">
         <p className="text-sm text-white/40">Thanks for playing.</p>

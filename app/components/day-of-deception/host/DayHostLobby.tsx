@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { createClient } from "@/lib/supabase/client";
@@ -42,6 +44,38 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
   const [packApplied, setPackApplied] = useState(false);
   const [cadence, setCadence] = useState<string>(config.missionCadence);
   const [savingCadence, setSavingCadence] = useState(false);
+  const [length, setLength] = useState<"day" | "weekend">("day");
+  const [discussion, setDiscussion] = useState(config.discussionTimerMinutes);
+
+  // Load the saved length (older databases don't have the column: stays "day")
+  useEffect(() => {
+    createClient()
+      .from("traitors_day_sessions")
+      .select("*")
+      .eq("id", sessionId)
+      .single()
+      .then(({ data }) => {
+        if (data?.game_length === "weekend") setLength("weekend");
+      });
+  }, [sessionId]);
+
+  // One day or a weekend. Sets sensible mission timing and Roundtable length.
+  async function handleLengthChange(value: "day" | "weekend") {
+    const preset = value === "weekend" ? { cadence: "60", discussion: 20 } : { cadence: "30", discussion: 15 };
+    const prev = { length, cadence, discussion };
+    setLength(value);
+    setCadence(preset.cadence);
+    setDiscussion(preset.discussion);
+    const { error } = await createClient()
+      .from("traitors_day_sessions")
+      .update({ game_length: value, mission_cadence: preset.cadence, discussion_timer_minutes: preset.discussion })
+      .eq("id", sessionId);
+    if (error) {
+      setLength(prev.length);
+      setCadence(prev.cadence);
+      setDiscussion(prev.discussion);
+    }
+  }
 
   // How often the server automatically sends Traitors a new mission
   async function handleCadenceChange(value: string) {
@@ -94,7 +128,7 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
   const canStart = players.length >= 1;
   const settings: [string, string][] = [
     ["Traitors", String(config.deceiverCount)],
-    ["Discussion", `${config.discussionTimerMinutes} min`],
+    ["Discussion", `${discussion} min`],
     ["Voting", `${config.votingTimerSeconds} sec`],
     ["Max players", String(config.maxPlayers)],
   ];
@@ -133,6 +167,20 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
               </p>
             </div>
           </div>
+
+          <Link
+            href={`/day-of-deception/play?code=${encodeURIComponent(joinCode)}`}
+            className="mt-8 flex items-center gap-3 rounded-2xl border border-[#E8C67A]/25 bg-[#E8C67A]/[0.06] px-4 py-3.5 text-left transition-colors hover:bg-[#E8C67A]/[0.1]"
+          >
+            <Icon name="users" className="h-5 w-5 shrink-0 text-[#E8C67A]" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-medium text-white">Playing too? Join as a player</span>
+              <span className="mt-0.5 block text-xs text-white/50">
+                Your player screen gets a Host button, so you can run the whole game from one phone.
+              </span>
+            </span>
+            <Icon name="arrow" className="h-4 w-4 text-[#E8C67A]" />
+          </Link>
         </div>
 
         {/* Players + settings */}
@@ -173,6 +221,25 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
 
           <Card>
             <h2 className={`${display} text-2xl text-white`}>Settings</h2>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {(
+                [
+                  ["day", "One day", "About 3 Roundtables, midday to evening. Murder starts as soon as the day does."],
+                  ["weekend", "Weekend", "Friday to Sunday, about 2 Roundtables a day. Pause overnight with Good night."],
+                ] as const
+              ).map(([value, label, blurb]) => (
+                <button
+                  key={value}
+                  onClick={() => handleLengthChange(value)}
+                  className={`rounded-xl border p-3 text-left transition-colors ${
+                    length === value ? "border-[#E8C67A]/60 bg-[#E8C67A]/10" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                  }`}
+                >
+                  <span className="block text-[15px] font-medium text-white">{label}</span>
+                  <span className="mt-1 block text-xs leading-snug text-white/50">{blurb}</span>
+                </button>
+              ))}
+            </div>
             <label className="mt-4 flex items-center justify-between gap-4">
               <span>
                 <span className="block text-[15px] text-white/85">Automatic missions</span>

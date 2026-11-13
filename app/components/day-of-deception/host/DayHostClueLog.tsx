@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, Icon, Pill } from "../ui";
+import { formatClueText } from "@/lib/day-of-deception/clueText";
 
 interface ClueLogRow {
   id: string;
@@ -48,10 +49,10 @@ export default function DayHostClueLog({
 
   const name = (id: string | null) => players.find((p) => p.id === id)?.displayName ?? "Someone";
 
-  // Public clues go to everyone: show them once
+  // Tips and public clues go to everyone: show them once
   const seenPublic = new Set<string>();
   const visible = rows.filter((r) => {
-    if (r.source !== "public") return true;
+    if (r.source === "event") return true;
     const key = `${r.text}|${r.created_at.slice(0, 16)}`;
     if (seenPublic.has(key)) return false;
     seenPublic.add(key);
@@ -76,15 +77,15 @@ export default function DayHostClueLog({
               {visible.map((r) => (
                 <li key={r.id} className="flex items-start justify-between gap-4 px-3 py-3">
                   <div className="min-w-0">
-                    <p className="text-[15px] text-white">{r.text}</p>
+                    <p className="text-[15px] text-white">{formatClueText(r.text)}</p>
                     <p className="mt-1 text-xs text-white/40">
                       {r.source === "public"
                         ? "Everyone, after a missed mission"
                         : r.is_fake
-                          ? `${name(r.from_player_id)} → ${name(r.player_id)}`
+                          ? `Planted by ${name(r.from_player_id)}, sent to everyone`
                           : r.source === "event"
                             ? `${name(r.player_id)} won ${r.source_label ?? "an event"}`
-                            : `Anonymous tip to ${name(r.player_id)}`}
+                            : "Anonymous tip to everyone"}
                     </p>
                   </div>
                   {r.is_fake ? (

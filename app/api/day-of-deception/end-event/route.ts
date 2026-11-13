@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { sessionId, winnerIds } = await req.json();
+    const { sessionId, winnerIds, reward } = await req.json();
 
     // Verify host owns session
     const { data: session } = await db
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Clues: each winner gets one, plus one anonymous tip to someone else
+    // Winners get a private clue, or the shield-or-clue choice. Then one tip to everyone
     const { data: gs } = await db
       .from("traitors_day_game_state")
       .select("current_event_template")
@@ -38,7 +38,13 @@ export async function POST(req: Request) {
     let cluesAwarded = 0;
     try {
       const ids = Array.isArray(winnerIds) ? winnerIds.filter((x: unknown) => typeof x === "string") : [];
-      ({ awarded: cluesAwarded } = await awardEventClues(db, sessionId, gs?.current_event_template ?? null, ids));
+      ({ awarded: cluesAwarded } = await awardEventClues(
+        db,
+        sessionId,
+        gs?.current_event_template ?? null,
+        ids,
+        ["choice", "dagger", "truth"].includes(reward) ? reward : "clue"
+      ));
     } catch (err) {
       // Don't strand the game mid-event if clues fail; the host sees the count
       console.error("Award clues error:", err);

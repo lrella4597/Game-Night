@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Button, Card, Eyebrow, Icon, Pill, Title } from "../ui";
+import { eventNameFromCategory } from "@/lib/day-of-deception/clueText";
 
 interface Mission {
   id: string;
@@ -11,11 +12,6 @@ interface Mission {
   createdAt?: string;
 }
 
-interface DayPlayerFreeplayProps {
-  role: "traitor" | "faithful" | null;
-  missions: Mission[];
-  onCompleteMission: (missionId: string, proof?: string) => Promise<void>;
-}
 
 // Matches MISSION_WINDOW_MS on the server
 const MISSION_WINDOW_MIN = 30;
@@ -37,14 +33,16 @@ function useNow(intervalMs: number) {
 
 function MissionCard({ mission, onComplete, now }: { mission: Mission; onComplete: () => Promise<void>; now: number }) {
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const left = minutesLeft(mission.createdAt, now);
   const urgent = left !== null && left <= 5;
+  const eventName = eventNameFromCategory(mission.missionCategory);
 
   return (
     <Card tone="deceiver" className="p-5">
       <div className="flex items-center justify-between gap-2">
-        <Pill tone="deceiver" className="capitalize">
-          {mission.missionCategory}
+        <Pill tone="deceiver" className={eventName ? "" : "capitalize"}>
+          {eventName ? `Event objective · ${eventName}` : mission.missionCategory}
         </Pill>
         {left !== null && (
           <Pill tone={urgent ? "deceiver" : "neutral"} className={urgent ? "animate-pulse" : ""}>
@@ -55,15 +53,18 @@ function MissionCard({ mission, onComplete, now }: { mission: Mission; onComplet
       </div>
       <p className="mt-4 text-[17px] leading-relaxed text-white">{mission.missionText}</p>
       <div className="mt-5 flex items-center justify-between gap-3">
-        <span className="text-xs text-white/40">Earns 1 fake tip</span>
+        <span className="text-xs text-white/40">Every 3 done earns a double vote</span>
         <Button
           size="sm"
           variant="secondary"
           disabled={busy || left === 0}
           onClick={async () => {
             setBusy(true);
+            setError(null);
             try {
               await onComplete();
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Couldn't save it. Try again.");
             } finally {
               setBusy(false);
             }
@@ -73,11 +74,13 @@ function MissionCard({ mission, onComplete, now }: { mission: Mission; onComplet
           {busy ? "Saving" : "Done it"}
         </Button>
       </div>
+      {error && <p className="mt-3 text-sm text-rose-300">{error}</p>}
     </Card>
   );
 }
 
-function DeceiverView({
+/** A Traitor's missions, with Done buttons. Only ever shown inside My secret. */
+export function TraitorMissions({
   missions,
   onCompleteMission,
 }: {
@@ -91,28 +94,23 @@ function DeceiverView({
 
   return (
     <>
-      <Eyebrow className="!text-rose-300/80">Traitor</Eyebrow>
-      <Title className="mt-2">Your missions</Title>
-      <p className="mt-2 text-[15px] text-white/50">
-        {MISSION_WINDOW_MIN} minutes each. Miss one and everyone gets a clue. Be subtle.
+      <p className="text-[15px] text-white/50">
+        {MISSION_WINDOW_MIN} minutes each. Tap Done it when you have. Miss one and everyone learns what it was.
       </p>
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-4 space-y-3">
         {active.length === 0 ? (
-          <Card className="text-center py-8">
-            <Icon name="bell" className="mx-auto h-6 w-6 text-white/30" />
-            <p className="mt-3 text-[15px] text-white/60">No missions right now.</p>
+          <Card className="py-6 text-center">
+            <p className="text-[15px] text-white/60">No missions right now.</p>
             <p className="mt-1 text-sm text-white/35">You&apos;ll get a notification when one arrives.</p>
           </Card>
         ) : (
-          active.map((m) => (
-            <MissionCard key={m.id} mission={m} now={now} onComplete={() => onCompleteMission(m.id)} />
-          ))
+          active.map((m) => <MissionCard key={m.id} mission={m} now={now} onComplete={() => onCompleteMission(m.id)} />)
         )}
       </div>
 
       {done.length > 0 && (
-        <div className="mt-4">
+        <div className="mt-3">
           <button
             onClick={() => setShowDone((s) => !s)}
             className="flex w-full items-center justify-between px-1 py-2 text-sm text-white/45 hover:text-white/70"
@@ -136,20 +134,18 @@ function DeceiverView({
   );
 }
 
-function LoyalView() {
+/**
+ * Day phase content. The same for every player, so a glance at someone's
+ * screen gives nothing away. Roles and missions live behind My secret.
+ */
+export default function DayPlayerFreeplay() {
   return (
     <>
-      <Eyebrow className="!text-emerald-300/80">Faithful</Eyebrow>
+      <Eyebrow>The day</Eyebrow>
       <Title className="mt-2">Keep your eyes open.</Title>
       <p className="mt-3 text-[15px] leading-relaxed text-white/55">
-        Traitors are doing secret missions all day. Notice who acts a little off, win events to earn clues,
-        and remember: anonymous tips can be fake.
+        The Traitors are doing secret missions in plain sight. Your clues say what they were told to do. Watch who does it.
       </p>
     </>
   );
-}
-
-/** Day phase content. The page wraps it in a Screen with the clue card below. */
-export default function DayPlayerFreeplay({ role, missions, onCompleteMission }: DayPlayerFreeplayProps) {
-  return role === "traitor" ? <DeceiverView missions={missions} onCompleteMission={onCompleteMission} /> : <LoyalView />;
 }

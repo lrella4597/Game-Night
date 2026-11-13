@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, Emblem, Eyebrow, Icon, LoadingScreen, Screen, display } from "../ui";
 
 interface DayPlayerRoleRevealProps {
@@ -12,6 +12,13 @@ interface DayPlayerRoleRevealProps {
 export default function DayPlayerRoleReveal({ role, fellowDeceivers, loading }: DayPlayerRoleRevealProps) {
   // Tap to reveal, so nobody glances at your screen first
   const [revealed, setRevealed] = useState(false);
+
+  // Hides itself, so a phone left on the table doesn't give anyone away
+  useEffect(() => {
+    if (!revealed) return;
+    const t = setTimeout(() => setRevealed(false), 20_000);
+    return () => clearTimeout(t);
+  }, [revealed]);
 
   if (loading || role === null) return <LoadingScreen label="Handing out roles" />;
 
@@ -47,8 +54,8 @@ export default function DayPlayerRoleReveal({ role, fellowDeceivers, loading }: 
         </h1>
         <p className="mx-auto mt-5 max-w-xs text-[15px] leading-relaxed text-white/65">
           {isDeceiver
-            ? "Do your secret missions within 30 minutes. Each one earns a fake tip. Survive the final vote."
-            : "Win events to earn secret clues. Find the Traitors. Vote them out at the Roundtable."}
+            ? "Your missions and murders are all under My secret once the day starts. Never leave it open."
+            : "Win events for clues. Watch who does what the clues describe. Banish the Traitors at the Roundtable."}
         </p>
       </div>
 

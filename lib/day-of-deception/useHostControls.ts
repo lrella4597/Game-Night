@@ -88,11 +88,11 @@ export function useDayHostControls({ sessionId, broadcast }: UseDayHostControlsO
     [sessionId, broadcast]
   );
 
-  const endEvent = useCallback(async (winnerIds: string[] = []) => {
+  const endEvent = useCallback(async (winnerIds: string[] = [], reward: "clue" | "choice" | "dagger" | "truth" = "clue") => {
     const res = await fetch("/api/day-of-deception/end-event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId, winnerIds }),
+      body: JSON.stringify({ sessionId, winnerIds, reward }),
     });
     if (!res.ok) {
       const data = await res.json();
@@ -140,27 +140,35 @@ export function useDayHostControls({ sessionId, broadcast }: UseDayHostControlsO
     broadcast(DAY_HOST_EVENTS.TIMER_START, { duration });
   }, [sessionId, supabase, changePhase, broadcast]);
 
+  // Closes voting. Results are revealed step by step (host-action), so
+  // nothing about the outcome is broadcast here.
   const resolveVote = useCallback(async () => {
     const res = await fetch("/api/day-of-deception/resolve-vote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-
-    broadcast(DAY_HOST_EVENTS.VOTE_RESULT, {
-      voteTally: data.voteTally,
-      voteDetails: data.voteDetails || [],
-      accusedId: data.accusedId,
-      accusedName: data.accusedName,
-      accusedRole: data.accusedRole,
-      tied: data.tied,
-      winner: data.winner,
-    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Failed to close voting");
+    broadcast(DAY_HOST_EVENTS.TIMER_STOP, {});
     broadcast(DAY_HOST_EVENTS.PHASE_CHANGE, { phase: "reveal" });
-    return data;
+    return data as { tied: boolean };
   }, [sessionId, broadcast]);
+
+  /** Reveal steps, extra rounds and the murder. Phones pick it up from the database. */
+  const hostAction = useCallback(
+    async (action: string, extra?: Record<string, unknown>) => {
+      const res = await fetch("/api/day-of-deception/host-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, action, ...extra }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "That didn't work. Try again.");
+      return data;
+    },
+    [sessionId]
+  );
 
   const endGame = useCallback(async () => {
     await supabase
@@ -232,6 +240,7 @@ export function useDayHostControls({ sessionId, broadcast }: UseDayHostControlsO
     startRoundtable,
     startVoting,
     resolveVote,
+    hostAction,
     endGame,
     broadcastPlayers,
     kickPlayer,

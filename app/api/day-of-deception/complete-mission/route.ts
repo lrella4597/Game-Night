@@ -37,8 +37,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Mission already completed" }, { status: 400 });
     }
 
-    // Out of time, even if the timer job hasn't caught it yet
-    if (!mission.expired && Date.now() - new Date(mission.created_at).getTime() > MISSION_WINDOW_MS) {
+    const { data: session } = await db.from("traitors_day_sessions").select("*").eq("id", sessionId).single();
+    // Out of time, even if the timer job hasn't caught it yet (never while paused overnight)
+    if (!session?.missions_paused && !mission.expired && Date.now() - new Date(mission.created_at).getTime() > MISSION_WINDOW_MS) {
       await releasePublicClue(db, sessionId, missionId).catch((err) =>
         console.error("Release public clue error:", err)
       );
@@ -64,23 +65,31 @@ export async function POST(req: Request) {
       .eq("player_id", playerId)
       .eq("session_id", sessionId);
 
-    // Count completed missions (each one earns a fake tip to send)
+    // Count completed missions. Every third one earns a double vote.
     const { data: player } = await db
       .from("traitors_day_players")
-      .select("shadow_tokens")
+      .select("*")
       .eq("id", playerId)
       .eq("session_id", sessionId)
       .single();
 
     const newTokenCount = (player?.shadow_tokens ?? 0) + 1;
+    const earnedDagger = newTokenCount % 3 === 0;
 
     await db
       .from("traitors_day_players")
-      .update({ shadow_tokens: newTokenCount })
+      .update({
+        shadow_tokens: newTokenCount,
+        ...(earnedDagger ? { daggers: (player?.daggers ?? 0) + 1 } : {}),
+      })
       .eq("id", playerId)
       .eq("session_id", sessionId);
 
-    return NextResponse.json({ success: true, newTokenCount });
+    if (earnedDagger) {
+      const { logEvent } = await import("@/lib/day-of-deception/rounds");
+      await logEvent(db, sessionId, `${player?.display_name ?? "A Traitor"} earned a double vote for finishing 3 missions.`);
+    }
+    return NextResponse.json({ success: true, newTokenCount, earnedDagger });
   } catch (err) {
     console.error("Complete mission error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

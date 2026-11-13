@@ -10,17 +10,17 @@ interface DayPlayerEventActiveProps {
     durationMinutes: number;
     deceiverSecretMission?: string;
   } | null;
-  role: "traitor" | "faithful" | null;
   timerRemaining: number;
   timerRunning: boolean;
 }
 
 /** Event content. The page wraps it in a Screen with the clue card below. */
-export default function DayPlayerEventActive({ eventData, role, timerRemaining, timerRunning }: DayPlayerEventActiveProps) {
+// The same for every player. A Traitor's secret objective for this event is a
+// mission inside My secret.
+export default function DayPlayerEventActive({ eventData, timerRemaining, timerRunning }: DayPlayerEventActiveProps) {
   if (!eventData) {
     return <p className="py-20 text-center text-sm text-white/40">Loading the event</p>;
   }
-  const isDeceiver = role === "traitor";
 
   return (
     <>
@@ -41,12 +41,7 @@ export default function DayPlayerEventActive({ eventData, role, timerRemaining, 
         </p>
       </Card>
 
-      {isDeceiver && eventData.deceiverSecretMission && (
-        <Card tone="deceiver" className="mt-3">
-          <Eyebrow className="!text-rose-300/80">Your secret objective</Eyebrow>
-          <p className="mt-2.5 text-[16px] leading-relaxed text-white">{eventData.deceiverSecretMission}</p>
-        </Card>
-      )}
+
     </>
   );
 }

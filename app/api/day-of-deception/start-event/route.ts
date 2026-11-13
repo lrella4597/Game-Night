@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { dataClient } from "@/lib/supabase/admin";
 import { getRandomEvent } from "@/lib/day-of-deception/events";
-import { sendPushToSession } from "@/lib/push";
+import { sendPushToPlayer, sendPushToSession } from "@/lib/push";
 
 export async function POST(req: Request) {
   try {
@@ -91,6 +91,39 @@ export async function POST(req: Request) {
         last_action: "event_started",
       })
       .eq("session_id", sessionId);
+
+    // The event's secret objective becomes a real mission for each Traitor, so
+    // they can mark it done (it counts toward a double vote) or miss it like any other.
+    if (event.deceiverSecretMission) {
+      const { data: traitorRows } = await db
+        .from("traitors_day_players")
+        .select("*")
+        .eq("session_id", sessionId)
+        .eq("role", "traitor");
+      const traitors = (traitorRows || []).filter((t) => !t.eliminated);
+      if (traitors && traitors.length > 0) {
+        const { error: objErr } = await db.from("traitors_day_missions").insert(
+          traitors.map((t) => ({
+            session_id: sessionId,
+            player_id: t.id,
+            mission_text: event.deceiverSecretMission,
+            mission_category: `event:${event.name}`,
+            is_completed: false,
+          }))
+        );
+        if (objErr) console.error("Event objective insert error:", objErr);
+        // Generic on purpose: lock screens are easy to glance at
+        await Promise.allSettled(
+          traitors.map((t) =>
+            sendPushToPlayer(db, sessionId, t.id, {
+              title: "🔒 Check My secret",
+              body: "Make sure nobody's looking first.",
+              tag: "secret",
+            })
+          )
+        );
+      }
+    }
 
     await sendPushToSession(db, sessionId, {
       title: `📣 New Event: ${event.name}`,

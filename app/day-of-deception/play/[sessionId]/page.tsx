@@ -13,6 +13,12 @@ import DayPlayerEventActive from "@/app/components/day-of-deception/player/DayPl
 import DayPlayerRoundtable from "@/app/components/day-of-deception/player/DayPlayerRoundtable";
 import DayPlayerVoting from "@/app/components/day-of-deception/player/DayPlayerVoting";
 import DayPlayerReveal from "@/app/components/day-of-deception/player/DayPlayerReveal";
+import type { RevealState } from "@/app/components/day-of-deception/player/DayPlayerReveal";
+import { BreakfastCard, MurderNews, OutBanner, RewardChoice, ShieldNews } from "@/app/components/day-of-deception/player/DayPlayerMurder";
+import DayPlayerSecrets from "@/app/components/day-of-deception/player/DayPlayerSecrets";
+import type { SecretExtras, SecretMurder } from "@/app/components/day-of-deception/player/DayPlayerSecrets";
+import type { MurderState } from "@/app/components/day-of-deception/player/DayPlayerMurder";
+import HostPanel from "@/app/components/day-of-deception/host/HostPanel";
 import DayPlayerEnd from "@/app/components/day-of-deception/player/DayPlayerEnd";
 import type { DayPhase, PlayerRole, DayMission } from "@/lib/day-of-deception/types";
 import DodHelp from "@/app/components/day-of-deception/DodHelp";
@@ -32,6 +38,8 @@ interface PublicPlayer {
   avatarColor: string;
   isConnected: boolean;
   shadowTokens: number;
+  eliminated?: string | null;
+  shield?: boolean;
 }
 
 interface EventData {
@@ -39,16 +47,6 @@ interface EventData {
   instructions: string;
   durationMinutes: number;
   deceiverSecretMission?: string;
-}
-
-interface VoteResult {
-  voteTally: Record<string, { name: string; votes: number; weightedVotes: number }>;
-  voteDetails: { voterName: string; targetName: string }[];
-  accusedId: string | null;
-  accusedName: string | null;
-  accusedRole: string | null;
-  tied: boolean;
-  winner: string;
 }
 
 interface EndgameData {
@@ -87,8 +85,19 @@ export default function TraitorsDayPlayerPage() {
   const [voteTarget, setVoteTarget] = useState<string | null>(null);
   const [voteSubmitted, setVoteSubmitted] = useState(false);
 
-  // Vote result
-  const [voteResult, setVoteResult] = useState<VoteResult | null>(null);
+  // The reveal (step by step), the murder, and whether I'm still in
+  const [reveal, setReveal] = useState<RevealState | null>(null);
+  const [murder, setMurder] = useState<MurderState & SecretMurder>({ status: null, victimName: null });
+  const [breakfast, setBreakfast] = useState<{ checkedIn: boolean; waitingOn: number } | null>(null);
+  const [endgameVote, setEndgameVote] = useState<{ mine: string | null; voted: number; voters: number } | null>(null);
+  const [secretExtras, setSecretExtras] = useState<SecretExtras>({});
+  const [gameLength, setGameLength] = useState<"day" | "weekend">("day");
+  const [paused, setPaused] = useState(false);
+  const [eliminated, setEliminated] = useState<string | null>(null);
+  // The host plays too: their screen gets a Host button
+  const [isHost, setIsHost] = useState(false);
+  // Won an event with the shield on the line and hasn't chosen yet
+  const [pendingChoice, setPendingChoice] = useState<string | null>(null);
 
   // "About you" answers: null until we know, then whether to ask
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
@@ -209,22 +218,6 @@ export default function TraitorsDayPlayerPage() {
 
   useEffect(() => {
     if (!onBroadcast) return;
-    return onBroadcast(DAY_HOST_EVENTS.VOTE_RESULT, (raw: unknown) => {
-      const payload = raw as AnyPayload;
-      setVoteResult({
-        voteTally: payload.voteTally,
-        voteDetails: payload.voteDetails || [],
-        accusedId: payload.accusedId,
-        accusedName: payload.accusedName,
-        accusedRole: payload.accusedRole,
-        tied: payload.tied,
-        winner: payload.winner,
-      });
-    });
-  }, [onBroadcast]);
-
-  useEffect(() => {
-    if (!onBroadcast) return;
     return onBroadcast(DAY_HOST_EVENTS.ENDGAME, (raw: unknown) => {
       const payload = raw as AnyPayload;
       setEndgameData({ winner: payload.winner, players: payload.players });
@@ -280,7 +273,16 @@ export default function TraitorsDayPlayerPage() {
         setVoteSubmitted(!!s.voteSubmitted);
         if (s.voteTarget) setVoteTarget(s.voteTarget);
       }
-      if (s.voteResult) setVoteResult(s.voteResult);
+      setReveal(s.reveal ?? null);
+      if (s.murder) setMurder(s.murder);
+      setBreakfast(s.breakfast ?? null);
+      setEndgameVote(s.endgameVote ?? null);
+      setSecretExtras(s.secretExtras ?? {});
+      setGameLength(s.gameLength === "weekend" ? "weekend" : "day");
+      setPaused(!!s.paused);
+      setEliminated(s.eliminated ?? null);
+      setIsHost(!!s.isHost);
+      setPendingChoice(s.pendingChoice ?? null);
       if (s.endgame) setEndgameData(s.endgame);
       if (typeof s.timerSeconds === "number" && s.timerSeconds > 0) {
         startTimer(s.timerSeconds);
@@ -385,12 +387,21 @@ export default function TraitorsDayPlayerPage() {
   // ── Mission completion ────────────────────────────────────────────────────
 
   async function handleCompleteMission(missionId: string, proof?: string) {
-    try {
-      await controls.completeMission(missionId, proof);
-      await fetchMissions();
-    } catch (err) {
-      console.error("Complete mission error:", err);
-    }
+    // Errors go back to the mission card so the Traitor sees them
+    await controls.completeMission(missionId, proof);
+    await fetchMissions();
+  }
+
+  async function playerAction(action: string, extra?: Record<string, unknown>) {
+    const res = await fetch("/api/day-of-deception/player-action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId, playerId, token: playerToken, action, ...extra }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "That didn't work. Try again.");
+    await syncState();
+    return data;
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -401,34 +412,33 @@ export default function TraitorsDayPlayerPage() {
 
   const dodPlayerHelp = (
     <DodHelp
-      gameKey="howto_dod_player"
+      gameKey="howto_dod_player_v3"
       title="How to play"
       sections={[
         {
-          title: "Your Role",
+          title: "Keep it secret",
           steps: [
-            "You are secretly assigned as either Faithful or Traitor",
-            "Faithful: Work together to identify the Traitors among you",
-            "Traitor: Blend in and avoid being caught while completing secret missions",
+            "Your screen looks the same as everyone's. Your role, missions and anything private are under My secret",
+            "My secret hides itself after 30 seconds. Check nobody's looking before you open it",
           ],
         },
         {
-          title: "During the Day",
+          title: "Each round",
           steps: [
-            "Win events to earn secret clues about the Traitors",
-            "Traitors get secret missions. Each one has 30 minutes. Miss it and everyone gets a clue",
-            "Finished missions earn Traitors a fake anonymous tip to send",
-            "Participate in group events — Traitors may have secret objectives",
-            "Pay attention to how others behave — look for suspicious actions",
+            "The Traitors murder someone in plain sight, with a move like tossing them an apple. One murder per round",
+            "Breakfast: everyone taps I'm here, then the victim is revealed",
+            "Events: win a private clue, the shield-or-team-clue choice, a double vote, or a truth check (pick two players, learn if a Traitor is among them)",
+            "Clues never name anyone. They say what the Traitors were told to do, so watch who does it",
+            "Then the Roundtable",
           ],
         },
         {
-          title: "Roundtable & Voting",
+          title: "Roundtable",
           steps: [
-            "During the Roundtable, discuss openly who you suspect and why",
-            "When voting starts, pick the player you think is a Traitor",
-            "The player with the most votes is revealed — were they Faithful or Traitor?",
-            "Faithfuls win by finding all Traitors. Traitors win by surviving.",
+            "Lock your vote on your phone, then hold it up and say who and why",
+            "The banished player says their piece and reveals for themselves if they were a Traitor",
+            "Lose a Traitor and the rest can recruit someone",
+            "With 4 or fewer left: end the game, or banish again. Ending needs everyone, and any Traitor left wins it",
           ],
         },
       ]}
@@ -477,16 +487,53 @@ export default function TraitorsDayPlayerPage() {
   return (
     <>
       {pushPrompt}
+      {isHost && <HostPanel sessionId={sessionId} broadcast={broadcast} mode="sheet" myPlayerId={playerId} />}
       {CLUE_PHASES.includes(phase) && playerId && playerToken ? (
-        <Screen tone={phase === "freeplay" && myRole === "traitor" ? "deceiver" : "neutral"} className="pb-16">
+        // The same look for every player: nothing on this screen says who you are
+        <Screen tone="neutral" className="pb-16">
+          <OutBanner how={eliminated} />
+          {paused && (
+            <p className="mb-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-white/70">
+              🌙 The game is paused for the night. See you in the morning.
+            </p>
+          )}
+          <BreakfastCard
+            title={gameLength === "weekend" ? "☕ Breakfast" : "🔔 Gather round"}
+            breakfast={breakfast}
+            onCheckIn={async () => {
+              await playerAction("check_in");
+            }}
+          />
+          <MurderNews victimName={murder.victimName} isMe={eliminated === "murdered"} />
+          <RewardChoice
+            eventName={eliminated ? null : pendingChoice}
+            onChoose={async (choice) => {
+              await playerAction("reward_choice", { targetId: choice });
+            }}
+          />
+          <ShieldNews names={players.filter((p) => p.shield && !p.eliminated).map((p) => (p.id === playerId ? "You" : p.displayName))} />
+          <DayPlayerSecrets
+            sessionId={sessionId}
+            playerId={playerId}
+            playerToken={playerToken}
+            role={myRole}
+            fellowTraitors={fellowDeceivers}
+            missions={missions}
+            murder={murder}
+            extras={secretExtras}
+            players={players}
+            eliminated={eliminated}
+            onCompleteMission={handleCompleteMission}
+            onAction={playerAction}
+          />
           {renderPhase()}
           <DayPlayerClues
-          sessionId={sessionId}
-          playerId={playerId}
-          playerToken={playerToken}
-          role={myRole}
-          players={players}
-          refreshKey={clueRefresh}
+            sessionId={sessionId}
+            playerId={playerId}
+            playerToken={playerToken}
+            role={myRole}
+            players={players}
+            refreshKey={clueRefresh}
           />
         </Screen>
       ) : (
@@ -532,11 +579,7 @@ export default function TraitorsDayPlayerPage() {
     return (
       <>
         {dodPlayerHelp}
-        <DayPlayerFreeplay
-          role={myRole}
-          missions={missions}
-          onCompleteMission={handleCompleteMission}
-        />
+        <DayPlayerFreeplay />
       </>
     );
   }
@@ -547,7 +590,6 @@ export default function TraitorsDayPlayerPage() {
         {dodPlayerHelp}
         <DayPlayerEventActive
           eventData={eventData}
-          role={myRole}
           timerRemaining={timerRemaining}
           timerRunning={timerRunning}
         />
@@ -567,12 +609,18 @@ export default function TraitorsDayPlayerPage() {
     );
   }
 
+  if (phase === "voting" && eliminated) {
+    return (
+      <p className="py-16 text-center text-[15px] text-white/50">Voting is underway. You&apos;re out, so just watch.</p>
+    );
+  }
+
   if (phase === "voting") {
     return (
       <>
         {dodPlayerHelp}
         <DayPlayerVoting
-          players={players}
+          players={players.filter((p) => !p.eliminated && !p.shield)}
           myPlayerId={playerId ?? ""}
           selectedTarget={voteTarget}
           onSelectTarget={setVoteTarget}
@@ -589,13 +637,25 @@ export default function TraitorsDayPlayerPage() {
     return (
       <>
         {dodPlayerHelp}
-        <DayPlayerReveal voteResult={voteResult} myRole={myRole} />
+        <DayPlayerReveal
+          reveal={reveal}
+          myRole={myRole}
+          onRevealRole={async () => {
+            await playerAction("reveal_role");
+          }}
+          endgameVote={eliminated ? null : endgameVote}
+          onEndgameVote={async (v) => {
+            await playerAction("endgame_vote", { targetId: v });
+          }}
+        />
       </>
     );
   }
 
   if (phase === "end" && endgameData) {
-    return <DayPlayerEnd endgameData={endgameData} myRole={myRole} />;
+    return (
+      <DayPlayerEnd endgameData={endgameData} myRole={myRole} recapQuery={`sessionId=${sessionId}&playerId=${playerId}&token=${encodeURIComponent(playerToken ?? "")}`} />
+    );
   }
 
   // Fallback: waiting

@@ -16,28 +16,20 @@ export async function POST(req: Request) {
     const auth = await verifyPlayer(supabase, sessionId, playerId, token);
     if (!auth.ok) return auth.response;
 
-    // Verify player exists in this session
-    const { data: player } = await db
-      .from("traitors_day_players")
-      .select("id")
-      .eq("id", playerId)
-      .eq("session_id", sessionId)
-      .single();
-
+    const { data: rows } = await db.from("traitors_day_players").select("*").eq("session_id", sessionId);
+    const player = rows?.find((p) => p.id === playerId);
+    const target = rows?.find((p) => p.id === targetId);
     if (!player) {
       return NextResponse.json({ error: "Player not found" }, { status: 404 });
     }
-
-    // Verify target exists in the same session
-    const { data: target } = await db
-      .from("traitors_day_players")
-      .select("id")
-      .eq("id", targetId)
-      .eq("session_id", sessionId)
-      .single();
-
-    if (!target) {
-      return NextResponse.json({ error: "Invalid target" }, { status: 400 });
+    if (player.eliminated) {
+      return NextResponse.json({ error: "You're out of the game, so you can't vote" }, { status: 400 });
+    }
+    if (!target || target.eliminated || target.id === playerId) {
+      return NextResponse.json({ error: "Pick someone still in the game" }, { status: 400 });
+    }
+    if (target.shield) {
+      return NextResponse.json({ error: `${target.display_name} has the shield` }, { status: 400 });
     }
 
     // Record vote
