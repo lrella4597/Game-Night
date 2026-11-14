@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendPushToPlayer, sendPushToSession } from "@/lib/push";
-import { eventNameFromCategory, timeToken } from "@/lib/day-of-deception/clueText";
+import { eventNameFromCategory, skipperHint, timeToken } from "@/lib/day-of-deception/clueText";
 
 // ── Clues ────────────────────────────────────────────────────────────────────
 // Clues never name anyone. They tell you what the Traitors were told to do,
@@ -9,7 +9,7 @@ import { eventNameFromCategory, timeToken } from "@/lib/day-of-deception/clueTex
 //   mission_done     A Traitor pulled this off: "move someone's drink"
 //   mission_time     A Traitor finished a secret mission at 3:42 PM.
 //   event_objective  In Charades, a Traitor's secret objective was: "..."
-//   mission_missed   (public) A Traitor ran out of time on: "..."
+//   mission_missed   (public) A Traitor skipped: "...". Their name starts with A to J.
 //   mission_count    The Traitors have pulled off 3 secret missions so far.
 //   murder_method    Jess was murdered in plain sight: someone tossed them an apple.
 //
@@ -18,7 +18,9 @@ import { eventNameFromCategory, timeToken } from "@/lib/day-of-deception/clueTex
 //     puts a shield on the line, each winner chooses: the shield, or a real
 //     clue for everyone (giftClue). Everyone is told which they picked.
 //   * After each event, one anonymous tip goes to EVERYONE.
-//   * A missed mission releases a public clue about that mission.
+//   * A missed mission releases a public clue about that mission, plus a
+//     hint that halves the suspects. Skipping has to cost the Traitor more
+//     than doing it.
 
 // A mission has this long to be completed before it expires and everyone
 // gets a public clue.
@@ -354,8 +356,10 @@ export async function giftClue(db: Db, sessionId: string, fromName: string): Pro
 }
 
 /**
- * A mission ran out of time: everyone learns what that mission was. Doesn't
- * say whose it was.
+ * A mission ran out of time: everyone learns what that mission was, and a
+ * hint about whose it was (the first letter of their name, to within about
+ * half the players still in). Never a name. Event objectives only reveal
+ * the objective: they're harder to pull off on a timer.
  */
 export async function releasePublicClue(db: Db, sessionId: string, missionId: string): Promise<boolean> {
   // Claim the mission first so two ticks can't both release a clue for it
@@ -365,17 +369,28 @@ export async function releasePublicClue(db: Db, sessionId: string, missionId: st
     .eq("id", missionId)
     .eq("expired", false)
     .eq("is_completed", false)
-    .select("id, mission_text, mission_category");
+    .select("*");
   if (!claimed || claimed.length === 0) return false;
-  const mission = claimed[0] as { id: string; mission_text: string; mission_category: string | null };
+  const mission = claimed[0] as { id: string; player_id: string; mission_text: string; mission_category: string | null };
 
-  const { data: players } = await db.from("traitors_day_players").select("id").eq("session_id", sessionId);
+  const { data: players } = await db.from("traitors_day_players").select("*").eq("session_id", sessionId);
   const event = eventNameFromCategory(mission.mission_category);
+  const living = (players || []).filter((p) => !p.eliminated);
+  const skipper = living.find((p) => p.id === mission.player_id);
+  const hint =
+    !event && skipper
+      ? skipperHint(
+          living.map((p) => p.display_name as string),
+          skipper.display_name as string
+        )
+      : null;
   const clue: GeneratedClue = {
     kind: "mission_missed",
     text: event
       ? `In ${event}, a Traitor never pulled off their secret objective: "${mission.mission_text}"`
-      : `A Traitor ran out of time on this mission: "${mission.mission_text}". Who looked like they were trying?`,
+      : hint
+        ? `A Traitor skipped this mission: "${mission.mission_text}". The price: their name starts with ${hint}.`
+        : `A Traitor ran out of time on this mission: "${mission.mission_text}". Who looked like they were trying?`,
     subjectIds: [],
     missionId: mission.id,
   };
@@ -392,7 +407,9 @@ export async function releasePublicClue(db: Db, sessionId: string, missionId: st
   );
   await sendPushToSession(db, sessionId, {
     title: "🔎 A Traitor slacked off",
-    body: "They missed a mission, so everyone gets a clue. Open the game.",
+    body: hint
+      ? "They skipped a mission, so everyone gets a hint about who. Open the game."
+      : "They missed a mission, so everyone gets a clue. Open the game.",
     tag: "public-clue",
   });
   return true;

@@ -53,7 +53,9 @@ function MissionCard({ mission, onComplete, now }: { mission: Mission; onComplet
       </div>
       <p className="mt-4 text-[17px] leading-relaxed text-white">{mission.missionText}</p>
       <div className="mt-5 flex items-center justify-between gap-3">
-        <span className="text-xs text-white/40">Every 3 done earns a double vote</span>
+        <span className="text-xs text-white/40">
+          Every 3 done earns a double vote. Skip it and everyone gets a hint about your name.
+        </span>
         <Button
           size="sm"
           variant="secondary"
