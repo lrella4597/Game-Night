@@ -14,6 +14,7 @@ interface HostState {
   gameLength: "day" | "weekend";
   paused: boolean;
   joinCode: string;
+  settingChosen: boolean;
   eventNames: string[];
   currentEvent: string | null;
   timerEndsAt: number | null;
@@ -159,14 +160,20 @@ export default function HostPanel({ sessionId, broadcast, mode, myPlayerId }: Ho
         <Card className="p-4">
           <p className="text-[15px] text-white">{state.players.length} joined</p>
           <p className="mt-1 text-xs text-white/45">Everyone has to join before you start. Roles are dealt the moment you tap.</p>
-          <Button full className="mt-4" disabled={b("start") || state.players.length < 2} onClick={() => run("start", controls.startGame)}>
-            {b("start") ? "Dealing roles" : "Start the game"}
-          </Button>
+          {state.settingChosen ? (
+            <Button full className="mt-4" disabled={b("start") || state.players.length < 2} onClick={() => run("start", controls.startGame)}>
+              {b("start") ? "Dealing roles" : "Start the game"}
+            </Button>
+          ) : (
+            <p className="mt-4 rounded-xl bg-[#E8C67A]/10 px-3 py-2 text-sm text-[#E8C67A]">
+              Pick where you&apos;re playing first. It&apos;s on the setup screen below.
+            </p>
+          )}
           <Link
             href={`/day-of-deception/host/${sessionId}`}
             className="mt-3 flex h-11 w-full items-center justify-center rounded-xl border border-white/10 text-sm font-medium text-white/75 hover:text-white"
           >
-            QR code and Customize Today
+            Setup: QR code, where you&apos;re playing, Customize Today
           </Link>
         </Card>
       )}

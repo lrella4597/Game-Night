@@ -45,6 +45,8 @@ export async function GET(req: Request) {
       gameLength: session.game_length === "weekend" ? "weekend" : "day",
       paused: !!session.missions_paused,
       joinCode: session.join_code,
+      // Where the host said they're playing, or a custom pack: ready to start
+      settingChosen: !!(session.context_summary as { setting?: string } | null)?.setting || pack.length > 0,
       eventNames: pack.length > 0 ? pack.map((e) => e.name) : EVENT_TEMPLATES.map((e) => e.name),
       currentEvent: phase === "event_active" ? (gs?.current_event_template ?? null) : null,
       timerEndsAt:

@@ -9,6 +9,8 @@ import CustomizeTodayChat from "./CustomizeTodayChat";
 import PackEditor from "./PackEditor";
 import type { MissionPackItem, EventPackItem } from "@/lib/chat/types";
 import { Avatar, Button, Card, Eyebrow, Icon, Screen, Title, display } from "../ui";
+import { GAME_SETTINGS, isGameSetting, settingPack } from "@/lib/day-of-deception/settings";
+import type { GameSetting } from "@/lib/day-of-deception/settings";
 
 interface DayHostLobbyProps {
   sessionId: string;
@@ -46,6 +48,9 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
   const [savingCadence, setSavingCadence] = useState(false);
   const [length, setLength] = useState<"day" | "weekend">("day");
   const [discussion, setDiscussion] = useState(config.discussionTimerMinutes);
+  // Where the game is being played. Has to be picked before starting.
+  const [setting, setSetting] = useState<GameSetting | null>(null);
+  const [savingSetting, setSavingSetting] = useState(false);
 
   // Load the saved length (older databases don't have the column: stays "day")
   useEffect(() => {
@@ -56,6 +61,11 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
       .single()
       .then(({ data }) => {
         if (data?.game_length === "weekend") setLength("weekend");
+        const saved = (data?.context_summary as { setting?: string } | null)?.setting;
+        if (isGameSetting(saved)) setSetting(saved);
+        // A custom pack written earlier (Customize Today) stays in charge
+        const firstId = Array.isArray(data?.mission_pack) ? String(data.mission_pack[0]?.id ?? "") : null;
+        if (firstId !== null && !/^(out|event)-m/.test(firstId)) setPackApplied(true);
       });
   }, [sessionId]);
 
@@ -74,6 +84,31 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
       setLength(prev.length);
       setCadence(prev.cadence);
       setDiscussion(prev.discussion);
+    }
+  }
+
+  // Where you're playing picks the missions and events, unless Customize
+  // Today already wrote a pack for this game.
+  async function handleSettingChange(value: GameSetting) {
+    const previous = setting;
+    setSetting(value);
+    setSavingSetting(true);
+    try {
+      const pack = settingPack(value);
+      const res = await fetch("/api/day-of-deception/save-pack", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          ...(packApplied ? { keepPack: true } : { missionPack: pack?.missions ?? null, eventPack: pack?.events ?? null }),
+          contextSummary: { theme: "", setting: value, conversationHistory: "" },
+        }),
+      });
+      if (!res.ok) setSetting(previous);
+    } catch {
+      setSetting(previous);
+    } finally {
+      setSavingSetting(false);
     }
   }
 
@@ -125,7 +160,7 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
     });
   }
 
-  const canStart = players.length >= 1;
+  const canStart = players.length >= 1 && setting !== null && !savingSetting;
   const settings: [string, string][] = [
     ["Traitors", String(config.deceiverCount)],
     ["Discussion", `${discussion} min`],
@@ -220,6 +255,26 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
           </Card>
 
           <Card>
+            <h2 className={`${display} text-2xl text-white`}>Where are you playing?</h2>
+            <p className="mt-1 text-sm text-white/50">Missions and events are picked to fit the place.</p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              {GAME_SETTINGS.map((s) => (
+                <button
+                  key={s.key}
+                  disabled={savingSetting}
+                  onClick={() => handleSettingChange(s.key)}
+                  className={`rounded-xl border p-3 text-left transition-colors ${
+                    setting === s.key ? "border-[#E8C67A]/60 bg-[#E8C67A]/10" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                  }`}
+                >
+                  <span className="block text-[15px] font-medium text-white">{s.label}</span>
+                  <span className="mt-1 block text-xs leading-snug text-white/50">{s.blurb}</span>
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          <Card>
             <h2 className={`${display} text-2xl text-white`}>Settings</h2>
             <div className="mt-4 grid grid-cols-2 gap-2">
               {(
@@ -296,6 +351,7 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
         <div className="mt-10">
           <CustomizeTodayChat
             sessionId={sessionId}
+            settingHint={GAME_SETTINGS.find((s) => s.key === setting)?.aiHint}
             onPackGenerated={(missions, events) => {
               setMissionPack(missions);
               setEventPack(events);
@@ -322,7 +378,7 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
                     sessionId,
                     missionPack,
                     eventPack,
-                    contextSummary: { theme: "", setting: "", conversationHistory: "" },
+                    contextSummary: { theme: "", setting: setting ?? "", conversationHistory: "" },
                   }),
                 });
                 if (res.ok) setPackApplied(true);
@@ -343,8 +399,10 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
               <span className="text-rose-300">{startError}</span>
             ) : canStart ? (
               `${players.length} player${players.length !== 1 ? "s" : ""} ready. Roles are dealt the moment you start.`
-            ) : (
+            ) : players.length < 1 ? (
               "Need at least 1 player to start."
+            ) : (
+              "Pick where you're playing to start."
             )}
           </p>
           <Button size="lg" onClick={handleStart} disabled={!canStart || starting} className="min-w-48">
