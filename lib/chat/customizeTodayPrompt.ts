@@ -58,11 +58,13 @@ You MUST respond with valid JSON in this exact format:
   - \`high\` — Risky, likely to draw attention if sloppy
 - Aim for a good mix: ~6 social, ~6 conversational, ~6 sneaky; ~6 low, ~8 medium, ~4 high
 - Missions should be **specific to the described setting** (a BBQ mission pack should differ from an office party pack)
+- Missions must be **feasible where the group is**: one simple action a Traitor can do in a minute or two without leaving what they're doing. If the group is at a big event with people who aren't playing (a wedding, a public party), keep every mission quiet, quick and done in passing, and never disrupt the event
 
 # EVENT PACK REQUIREMENTS
 - Generate **8-12 events**
 - Each event should be a structured group activity lasting 5-20 minutes
 - Events should fit the setting (don't suggest water balloon fights at an office)
+- If the group is out in public or at a big event, events must take under 5 minutes, need no props, and never need everyone gathered in a circle
 - \`deceiverSecretMission\` is optional but encouraged — it gives Traitors something sneaky to do during the event
 - Events should be **fun for everyone**, not just a vehicle for deception
 - Include a mix of:

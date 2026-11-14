@@ -18,6 +18,8 @@ interface CustomizeTodayChatProps {
     contextSummary: ContextSummary
   ) => void;
   onClose: () => void;
+  /** Where the host said they're playing, so the AI writes for that place */
+  settingHint?: string;
 }
 
 const SUGGESTED_PROMPTS = [
@@ -31,6 +33,7 @@ export default function CustomizeTodayChat({
   sessionId,
   onPackGenerated,
   onClose,
+  settingHint,
 }: CustomizeTodayChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -136,7 +139,7 @@ export default function CustomizeTodayChat({
       const res = await apiFetch("/api/chat/customize-today", {
         method: "POST",
         body: JSON.stringify({
-          message: messageText,
+          message: settingHint ? `${messageText}\n\n(Where we're playing: ${settingHint})` : messageText,
           conversationHistory,
           // Lets the AI use what players said about themselves when they joined
           sessionId,

@@ -37,7 +37,9 @@ export async function GET(req: Request) {
     } = { role: player.role };
 
     // If deceiver, also return fellow deceiver IDs + names
-    if (player.role === "traitor") {
+    // Only when the host lets Traitors know each other
+    const { data: session } = await db.from("traitors_day_sessions").select("*").eq("id", sessionId).single();
+    if (player.role === "traitor" && session?.traitors_know_each_other !== false) {
       const { data: fellowDeceivers } = await db
         .from("traitors_day_players")
         .select("id, display_name")

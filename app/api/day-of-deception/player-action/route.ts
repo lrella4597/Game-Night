@@ -100,7 +100,13 @@ export async function POST(req: Request) {
         if (!isLivingTraitor) return fail("Only Traitors still in the game can murder");
         if (gs.murder_status !== "open" && gs.murder_status !== "chosen") return fail("No murder right now");
         const target = players.find((p) => p.id === targetId);
-        if (!target || target.eliminated || target.role === "traitor") return fail("Pick a Faithful player still in the game");
+        // Blind Traitors can go after one of their own without knowing it.
+        // Refusing here would tell them who's a Traitor, so the pick stands
+        // and the murder fails at breakfast instead.
+        const blind = session?.traitors_know_each_other === false;
+        if (!target || target.eliminated || target.id === playerId || (!blind && target.role === "traitor")) {
+          return fail(blind ? "Pick another player still in the game" : "Pick a Faithful player still in the game");
+        }
         if (target.shield) return fail(`${target.display_name} has the shield. Pick someone else`);
         await setState({
           murder_status: "chosen",
@@ -187,7 +193,17 @@ export async function POST(req: Request) {
         if (!isLivingTraitor) return fail("Only Traitors can recruit");
         if (gs.recruit_status !== "open") return fail("You can't recruit right now");
         const target = players.find((p) => p.id === targetId);
-        if (!target || target.eliminated || target.role === "traitor") return fail("Pick a Faithful player still in the game");
+        const blind = session?.traitors_know_each_other === false;
+        if (!target || target.eliminated || target.id === playerId || (!blind && target.role === "traitor")) {
+          return fail(blind ? "Pick another player still in the game" : "Pick a Faithful player still in the game");
+        }
+        // Blind Traitors offered a place to one of their own: it counts as a
+        // "no", exactly what a Faithful turning them down looks like
+        if (target.role === "traitor") {
+          await setState({ recruit_status: "done", recruit_target_id: targetId, last_action: "recruit_refused" });
+          await logEvent(db, sessionId, `The Traitors tried to recruit ${target.display_name}, who was already one of them.`, round);
+          return ok();
+        }
         // Claim it so two Traitors can't each send an offer
         const { data: claimed } = await db
           .from("traitors_day_game_state")

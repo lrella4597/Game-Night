@@ -15,7 +15,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { sessionId, missionPack, eventPack, contextSummary } =
+    // keepPack: only the context changes (the host picked where they're
+    // playing after Customize Today already wrote a pack)
+    const { sessionId, missionPack, eventPack, contextSummary, keepPack } =
       await req.json();
 
     if (!sessionId) {
@@ -38,11 +40,11 @@ export async function POST(req: Request) {
 
     const { error } = await db
       .from("traitors_day_sessions")
-      .update({
-        mission_pack: missionPack,
-        event_pack: eventPack,
-        context_summary: contextSummary,
-      })
+      .update(
+        keepPack
+          ? { context_summary: contextSummary }
+          : { mission_pack: missionPack ?? null, event_pack: eventPack ?? null, context_summary: contextSummary }
+      )
       .eq("id", sessionId);
 
     if (error) {

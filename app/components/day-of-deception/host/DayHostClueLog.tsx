@@ -17,8 +17,9 @@ interface ClueLogRow {
 }
 
 /**
- * Every clue handed out, including fakes and who sent them. Hidden behind a
- * tap: spoilers, in case the host is also playing.
+ * Every clue handed out. Hidden behind a tap: spoilers, in case the host is
+ * also playing. Clues are always real now; the "Fake" label only shows on
+ * games played back when Traitors could plant tips.
  */
 export default function DayHostClueLog({
   sessionId,

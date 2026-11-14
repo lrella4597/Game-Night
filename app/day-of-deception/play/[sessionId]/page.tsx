@@ -429,6 +429,7 @@ export default function TraitorsDayPlayerPage() {
             "Breakfast: everyone taps I'm here, then the victim is revealed",
             "Events: win a private clue, the shield-or-team-clue choice, a double vote, or a truth check (pick two players, learn if a Traitor is among them)",
             "Clues never name anyone. They say what the Traitors were told to do, so watch who does it",
+            "A Traitor who skips a mission costs themselves: everyone gets a hint about the first letter of their name",
             "Then the Roundtable",
           ],
         },

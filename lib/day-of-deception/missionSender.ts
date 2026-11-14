@@ -12,6 +12,7 @@ export interface SentMission {
 interface SessionRow {
   id: string;
   mission_pack?: { text: string; category: string }[] | null;
+  traitors_know_each_other?: boolean | null;
 }
 
 /**
@@ -56,6 +57,11 @@ export async function sendMission(
   }
 
   const excludeTexts = existing.map((m) => m.mission_text);
+  // Traitors who don't know each other can't do missions about each other
+  if (session.traitors_know_each_other === false) {
+    const { MISSION_TEMPLATES } = await import("@/lib/day-of-deception/missions");
+    excludeTexts.push(...MISSION_TEMPLATES.filter((m) => /fellow traitor/i.test(m.text)).map((m) => m.text));
+  }
   let mission: { text: string; category: string };
   const customPack = session.mission_pack;
   if (customPack && customPack.length > 0) {
