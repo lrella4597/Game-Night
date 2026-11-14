@@ -3,6 +3,7 @@ import { sendPushToPlayer, sendPushToSession } from "@/lib/push";
 import { eventNameFromCategory, skipperHint, timeToken } from "@/lib/day-of-deception/clueText";
 
 // ── Clues ────────────────────────────────────────────────────────────────────
+// Every clue is true. There are no fake clues and no way to plant one.
 // Clues never name anyone. They tell you what the Traitors were told to do,
 // so the Roundtable is about who you saw doing it:
 //   mission_live     Right now, a Traitor is trying to: "get 3 people to clap"
@@ -221,8 +222,6 @@ interface SaveClueArgs {
   clue: GeneratedClue;
   source: ClueSource;
   sourceLabel?: string | null;
-  isFake?: boolean;
-  fromPlayerId?: string | null;
 }
 
 async function insertClues(db: Db, rows: SaveClueArgs[]) {
@@ -237,8 +236,8 @@ async function insertClues(db: Db, rows: SaveClueArgs[]) {
       source_label: r.sourceLabel ?? null,
       subject_ids: r.clue.subjectIds,
       mission_id: r.clue.missionId,
-      is_fake: r.isFake ?? false,
-      from_player_id: r.fromPlayerId ?? null,
+      // Every clue is real. The column is left over from fake tips.
+      is_fake: false,
     }))
   );
   if (error) throw new Error(`Failed to save clue: ${error.message}`);
