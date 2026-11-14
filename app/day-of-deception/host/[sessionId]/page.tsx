@@ -127,6 +127,7 @@ export default function TraitorsDayHostPage() {
           steps: [
             "Put the QR code on a screen. People with the app already just open it and type the code",
             "Playing too? Tap Join as a player. Your player screen gets a Host button, so one phone runs everything",
+            "Pick where you're playing, and whether the Traitors know who each other are",
             "Optional: tap Customize Today so the AI writes missions and events for your group",
           ],
         },

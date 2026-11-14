@@ -22,6 +22,8 @@ export interface SecretExtras {
   recruit?: { status: string | null; targetName: string | null } | null;
   // Anyone: the Traitors want you
   recruitOffer?: boolean;
+  // A Traitor in a game where Traitors aren't told who each other are
+  blind?: boolean;
 }
 
 interface PlayerLite {
@@ -168,6 +170,9 @@ function SecretBody({
               .join(", ")}
           </p>
         )}
+        {isTraitor && extras.blind && (
+          <p className="mt-2 text-sm text-white/55">You don&apos;t know who the other Traitors are. Work it out.</p>
+        )}
         {eliminated && <p className="mt-2 text-sm text-white/45">You&apos;re out of the game.</p>}
       </div>
 
@@ -219,8 +224,9 @@ function SecretBody({
                 <>
                   <p className="mt-3 text-[17px] leading-snug text-white">&ldquo;{murder.method}&rdquo;</p>
                   <p className="mt-2 text-sm text-white/55">
-                    Any Traitor can do it, to any Faithful player without a shield. In front of everyone, casually. Then
-                    tap who you got.
+                    {extras.blind
+                      ? "Any Traitor can do it, to any player without a shield. Pick another Traitor by mistake and the murder fails. In front of everyone, casually. Then tap who you got."
+                      : "Any Traitor can do it, to any Faithful player without a shield. In front of everyone, casually. Then tap who you got."}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {faithfulTargets.map((p) => (

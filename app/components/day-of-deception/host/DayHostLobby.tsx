@@ -51,6 +51,9 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
   // Where the game is being played. Has to be picked before starting.
   const [setting, setSetting] = useState<GameSetting | null>(null);
   const [savingSetting, setSavingSetting] = useState(false);
+  // Whether Traitors are told who the other Traitors are
+  const [traitorsKnown, setTraitorsKnown] = useState(true);
+  const [knownError, setKnownError] = useState(false);
 
   // Load the saved length (older databases don't have the column: stays "day")
   useEffect(() => {
@@ -61,6 +64,7 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
       .single()
       .then(({ data }) => {
         if (data?.game_length === "weekend") setLength("weekend");
+        if (data?.traitors_know_each_other === false) setTraitorsKnown(false);
         const saved = (data?.context_summary as { setting?: string } | null)?.setting;
         if (isGameSetting(saved)) setSetting(saved);
         // A custom pack written earlier (Customize Today) stays in charge
@@ -109,6 +113,20 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
       setSetting(previous);
     } finally {
       setSavingSetting(false);
+    }
+  }
+
+  async function handleTraitorsKnownChange(value: boolean) {
+    const previous = traitorsKnown;
+    setTraitorsKnown(value);
+    setKnownError(false);
+    const { error } = await createClient()
+      .from("traitors_day_sessions")
+      .update({ traitors_know_each_other: value })
+      .eq("id", sessionId);
+    if (error) {
+      setTraitorsKnown(previous);
+      setKnownError(true);
     }
   }
 
@@ -295,6 +313,26 @@ export default function DayHostLobby({ sessionId, players, joinCode, config, onS
                 </button>
               ))}
             </div>
+            <label className="mt-4 flex items-center justify-between gap-4">
+              <span>
+                <span className="block text-[15px] text-white/85">Traitors know each other</span>
+                <span className="block text-xs text-white/40">
+                  {knownError
+                    ? "Couldn't save. The database needs its latest update first."
+                    : traitorsKnown
+                      ? "They see who the other Traitors are"
+                      : "Each Traitor only knows their own role"}
+                </span>
+              </span>
+              <select
+                value={traitorsKnown ? "yes" : "no"}
+                onChange={(e) => handleTraitorsKnownChange(e.target.value === "yes")}
+                className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-[#E8C67A]/50 focus:outline-none"
+              >
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </label>
             <label className="mt-4 flex items-center justify-between gap-4">
               <span>
                 <span className="block text-[15px] text-white/85">Automatic missions</span>

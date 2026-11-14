@@ -55,10 +55,12 @@ export async function GET(req: Request) {
       return left > 0 ? left : 0;
     };
 
-    // Role (and fellow Traitors, only for Traitors)
+    // Role (and fellow Traitors, only for Traitors, and only when the host
+    // lets them know each other; the column is missing on older databases)
     const isTraitor = me.role === "traitor";
     const role = me.role ?? null;
-    const deceivers = isTraitor
+    const traitorsKnown = session.traitors_know_each_other !== false;
+    const deceivers = isTraitor && traitorsKnown
       ? players
           .filter((p) => p.role === "traitor" && p.id !== playerId)
           .map((p) => ({ id: p.id, displayName: p.display_name, eliminated: p.eliminated ?? null }))
@@ -140,7 +142,7 @@ export async function GET(req: Request) {
         ? {
             method: murderStatus === "open" || murderStatus === "chosen" ? (gs?.murder_method ?? null) : null,
             chosenName: murderStatus === "chosen" ? name(gs?.murder_victim_id) : null,
-            byName: murderStatus === "chosen" ? name(gs?.murder_by_id) : null,
+            byName: murderStatus === "chosen" && traitorsKnown ? name(gs?.murder_by_id) : null,
           }
         : {}),
     };
@@ -167,6 +169,8 @@ export async function GET(req: Request) {
 
     // Secret extras, shown only inside My secret. Powers can belong to anyone.
     const secretExtras: Record<string, unknown> = {
+      // A Traitor who isn't told who the others are
+      blind: isTraitor && !traitorsKnown,
       recruitOffer: !isTraitor && !!me.recruit_offer,
       daggers: me.daggers ?? 0,
       daggerArmed: !!me.dagger_armed,

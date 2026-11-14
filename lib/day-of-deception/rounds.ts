@@ -80,6 +80,18 @@ export async function openMurder(db: Db, sessionId: string, gs: Row, players: Ro
 export async function completeMurder(db: Db, sessionId: string, gs: Row, players: Row[]) {
   const victim = players.find((p) => p.id === gs.murder_victim_id);
   if (!victim) return;
+  // Only possible when Traitors don't know each other: they went after one
+  // of their own. Nobody dies, and nobody is told why.
+  if (victim.role === "traitor") {
+    await setState(db, sessionId, { murder_status: "done", murder_victim_id: null, last_action: "murder_revealed" });
+    await logEvent(db, sessionId, `The Traitors went after ${victim.display_name}, one of their own. Nobody was murdered.`, gs.round_number);
+    await sendPushToSession(db, sessionId, {
+      title: "☀️ Nobody was murdered",
+      body: "The Traitors' attempt failed. Everyone made it to breakfast.",
+      tag: "murder-revealed",
+    }).catch(() => {});
+    return;
+  }
   await db
     .from("traitors_day_players")
     .update({ eliminated: "murdered", eliminated_at: new Date().toISOString() })
