@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
-import { OB_MARGIN, dist, heightAt, pathInfo, slopeAt, surfaceAt, windAt, type Hole, type ThemeName, type Vec } from "../lib/course";
+import { OB_MARGIN, TAPIN_R, twoPuttRadius, dist, heightAt, pathInfo, slopeAt, surfaceAt, windAt, type Hole, type ThemeName, type Vec } from "../lib/course";
 import type { Vec3 } from "../lib/physics";
 import { PALETTES, type Palette } from "./theme";
 
@@ -126,6 +126,7 @@ export class GolfScene {
   private laser: Line2;
   private laserMat: LineMaterial;
   private target: THREE.Group;
+  private ringMats: LineMaterial[] = [];
   private flagGroup = new THREE.Group();
   private flag!: THREE.Mesh;
   private flagBase!: Float32Array;
@@ -213,7 +214,7 @@ export class GolfScene {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    for (const m of [this.trailMat, this.previewMat, this.laserMat]) m.resolution.set(w, h);
+    for (const m of [this.trailMat, this.previewMat, this.laserMat, ...this.ringMats]) m.resolution.set(w, h);
   }
 
   loadHole(hole: Hole, theme: ThemeName): TerrainMap {
@@ -320,6 +321,29 @@ export class GolfScene {
       const m = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), markerMat);
       m.position.copy(T(hole.tee.x + sx, hole.tee.y + 1, heightAt(hole, hole.tee.x + sx, hole.tee.y + 1) + 0.15));
       this.holeGroup.add(m);
+    }
+
+    // Putt rings, draped on the green: 2-putt (dashed) and tap-in (solid).
+    this.ringMats = [];
+    for (const [r, dashed, width] of [
+      [twoPuttRadius(hole), true, 2.5],
+      [TAPIN_R, false, 2.5],
+    ] as const) {
+      const pts: number[] = [];
+      for (let i = 0; i <= 96; i++) {
+        const a = (i / 96) * Math.PI * 2;
+        const x = hole.pin.x + Math.cos(a) * r;
+        const y = hole.pin.y + Math.sin(a) * r;
+        pts.push(x, heightAt(hole, x, y) + 0.04, -y);
+      }
+      const g = new LineGeometry();
+      g.setPositions(pts);
+      const mat = new LineMaterial({ color: 0xffffff, linewidth: width, transparent: true, opacity: dashed ? 0.8 : 0.95, dashed, dashSize: 0.6, gapSize: 0.45, depthWrite: false });
+      mat.resolution.set(this.size.w, this.size.h);
+      this.ringMats.push(mat);
+      const line = new Line2(g, mat);
+      line.computeLineDistances();
+      this.holeGroup.add(line);
     }
 
     // Cup and flag.

@@ -63,6 +63,12 @@ export type Course = {
   par: number;
 };
 
+/** Stop inside this many yards of the cup and the ball is tapped in. */
+export const TAPIN_R = 1.2;
+/** Share of the green radius covered by the 2-putt ring (0.75 = 56% of the area). */
+export const TWO_PUTT_FRAC = 0.75;
+export const twoPuttRadius = (hole: { greenRadius: number }) => hole.greenRadius * TWO_PUTT_FRAC;
+
 /** Beyond the tree line by this much is out of bounds. */
 export const OB_MARGIN = 45;
 

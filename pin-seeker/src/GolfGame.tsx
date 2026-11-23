@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { dist, generateCourse, heightAt, surfaceAt, todayEastern, type Hole, type PowerCard, type Surface } from "./lib/course";
+import { TAPIN_R, dist, generateCourse, heightAt, surfaceAt, todayEastern, twoPuttRadius, type Hole, type PowerCard, type Surface } from "./lib/course";
 import {
   MAX_POWER,
   PURE_WINDOW,
@@ -91,7 +91,7 @@ function remove(k: string) {
 const teeBall = (h: Hole): Vec3 => ({ x: h.tee.x, y: h.tee.y, z: heightAt(h, h.tee.x, h.tee.y) });
 const maxStrokes = (h: Hole) => h.par * 2;
 
-type Flight = { traj: Trajectory; t: number; nextEvent: number; start: Vec3; putt: boolean; endWait: number };
+type Flight = { traj: Trajectory; t: number; nextEvent: number; start: Vec3; putt: boolean; fromRing: boolean; endWait: number };
 
 export default function GolfGame({ date, challenge }: { date: string; challenge: Challenge }) {
   const course = useMemo(() => generateCourse(date), [date]);
@@ -390,7 +390,7 @@ export default function GolfGame({ date, challenge }: { date: string; challenge:
       setCardArmed(false);
     }
     setSnapshot({ ball, lie, strokes, heading, distance, scores: [...scores] });
-    flight.current = { traj, t: 0, nextEvent: 1, start: ball, putt: L.putt, endWait: 0 };
+    flight.current = { traj, t: 0, nextEvent: 1, start: ball, putt: L.putt, fromRing: L.putt && dist(ball, hole.pin) <= twoPuttRadius(hole), endWait: 0 };
     sfx.swing(traj.pure, L.putt);
     if (!L.putt) {
       if (traj.pure) flash("PURE! ✨");
@@ -455,6 +455,14 @@ export default function GolfGame({ date, challenge }: { date: string; challenge:
       scene?.setMode(isPuttLie(nl) ? "putt" : "aim");
       scene?.showSlopeDots(isPuttLie(nl));
       setPhase("aim");
+      return;
+    }
+    // Tap-ins: inside the small ring, or any miss putted from inside the 2-putt ring.
+    if (o.surface === "green" && (dist(o.at, hole.pin) <= TAPIN_R || (f.putt && f.fromRing))) {
+      setBall(o.at);
+      setLie("green");
+      flash("Tap-in ✓");
+      finishHole(used + 1, true);
       return;
     }
     if (used >= cap) return finishHole(cap, false);
@@ -832,7 +840,7 @@ export default function GolfGame({ date, challenge }: { date: string; challenge:
             </span>
           </div>
           <div className="mt-0.5 text-xs text-white/70">
-            Stroke {Math.min(strokes + 1, maxStrokes(hole))} · {LIE_LABEL[lie]}
+            {phase === "holeDone" ? `Holed in ${strokes}` : `Stroke ${Math.min(strokes + 1, maxStrokes(hole))} · ${LIE_LABEL[lie]}`}
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -894,6 +902,7 @@ export default function GolfGame({ date, challenge }: { date: string; challenge:
                       <>
                         {toPin < 1.5 ? `${Math.round(toPin * 3)} ft` : `${toPin.toFixed(1)} yds`} ·{" "}
                         {Math.abs(puttElev) < 0.08 ? "flat" : puttElev > 0 ? `uphill ${Math.round(puttElev * 36)}"` : `downhill ${Math.round(-puttElev * 36)}"`}
+                        {toPin <= twoPuttRadius(hole) ? " · miss = tap-in" : " · 3-putt zone"}
                       </>
                     ) : (
                       <>
@@ -1091,7 +1100,7 @@ export default function GolfGame({ date, challenge }: { date: string; challenge:
                 <b>Strike.</b> Tap as the needle crosses the white band. Early pulls left, late pushes right, pure flies true and runs out.
               </li>
               <li>
-                <b>Putt for real.</b> Read the slope dots, they flow downhill.
+                <b>Putt for real.</b> Read the slope dots, they flow downhill. Inside the dashed ring you can&apos;t 3-putt: miss and the next one is a tap-in. Stop inside the small ring and it drops.
               </li>
             </ol>
             <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
