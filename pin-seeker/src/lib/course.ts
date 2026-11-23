@@ -63,11 +63,18 @@ export type Course = {
   par: number;
 };
 
-/** Stop inside this many yards of the cup and the ball is tapped in. */
-export const TAPIN_R = 1.2;
-/** Share of the green radius covered by the 2-putt ring (0.75 = 56% of the area). */
+/** Land inside this many yards of the cup: one putt. */
+export const ONE_PUTT_R = 2.5;
+/** Share of the green radius covered by the 2-putt ring (0.75 = 56% of the area, so 3 putts on under half). */
 export const TWO_PUTT_FRAC = 0.75;
 export const twoPuttRadius = (hole: { greenRadius: number }) => hole.greenRadius * TWO_PUTT_FRAC;
+/** Automatic putts for a ball at rest on the green. */
+export function puttsFor(hole: { greenRadius: number; pin: Vec }, at: Vec): 1 | 2 | 3 {
+  const d = Math.hypot(at.x - hole.pin.x, at.y - hole.pin.y);
+  if (d <= ONE_PUTT_R) return 1;
+  if (d <= hole.greenRadius * TWO_PUTT_FRAC) return 2;
+  return 3;
+}
 
 /** Beyond the tree line by this much is out of bounds. */
 export const OB_MARGIN = 45;
@@ -453,6 +460,7 @@ function generateHole(rand: () => number, number: number, par: 3 | 4 | 5, theme:
     const half = r(14, 26);
     const ga = r(0, Math.PI * 2);
     const gs = r(8, 16);
+    if (hole.gusts.some((g) => cy - half < g.y1 + 15 && cy + half > g.y0 - 15)) continue;
     hole.gusts.push({ y0: cy - half, y1: cy + half, wind: { x: Math.cos(ga) * gs, y: Math.sin(ga) * gs } });
   }
   return hole;

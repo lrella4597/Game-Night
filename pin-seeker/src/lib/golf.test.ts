@@ -80,10 +80,13 @@ test("today is computed in US Eastern", () => {
 });
 
 test("the 3-putt zone (outside the 2-putt ring) is less than half the green", async () => {
-  const { twoPuttRadius, TAPIN_R } = await import("./course.ts");
+  const { twoPuttRadius, ONE_PUTT_R, puttsFor } = await import("./course.ts");
   for (const h of generateCourse("2026-11-22").holes) {
     const threePuttShare = 1 - (twoPuttRadius(h) / h.greenRadius) ** 2;
     assert.ok(threePuttShare < 0.5, `hole ${h.number}: ${threePuttShare}`);
-    assert.ok(TAPIN_R < twoPuttRadius(h));
+    assert.ok(ONE_PUTT_R < twoPuttRadius(h));
+    assert.equal(puttsFor(h, { x: h.pin.x + 1, y: h.pin.y }), 1);
+    assert.equal(puttsFor(h, { x: h.pin.x + twoPuttRadius(h) - 0.2, y: h.pin.y }), 2);
+    assert.equal(puttsFor(h, { x: h.pin.x + h.greenRadius - 0.2, y: h.pin.y }), 3);
   }
 });
