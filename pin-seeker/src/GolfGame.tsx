@@ -1,8 +1,5 @@
-"use client";
-
-import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { dist, generateCourse, pathInfo, pointAlong, todayEastern, type Hole, type Vec } from "@/lib/golf/course";
+import { dist, generateCourse, pathInfo, pointAlong, todayEastern, type Hole, type Vec } from "./lib/course";
 import {
   MAX_POWER,
   ONE_PUTT_R,
@@ -17,7 +14,7 @@ import {
   simulateShot,
   type Lie,
   type ShotResult,
-} from "@/lib/golf/shot";
+} from "./lib/shot";
 
 type Challenge = { toPar: number; by: string } | null;
 type Phase = "aim" | "power" | "accuracy" | "flying" | "holeDone" | "roundDone";
@@ -678,7 +675,7 @@ export default function GolfGame({ date, challenge }: { date: string; challenge:
     const base = typeof window !== "undefined" ? window.location.origin : "";
     const p = new URLSearchParams({ d: date, beat: String(toPar) });
     if (name.trim()) p.set("by", name.trim());
-    return `${base}/golf?${p.toString()}`;
+    return `${base}/?${p.toString()}`;
   };
   const shareText = () => {
     const row = scores.map((s, i) => (s == null ? "⬜" : scoreEmoji(s, course.holes[i].par))).join("");
@@ -710,9 +707,7 @@ export default function GolfGame({ date, challenge }: { date: string; challenge:
     <div className="fixed inset-0 flex flex-col bg-[#14321f] text-white select-none" style={{ touchAction: "manipulation" }}>
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[#0e2416] border-b border-white/10">
-        <Link href="/" className="text-white/70 hover:text-white text-sm px-2 py-1 rounded" aria-label="Back to Game Night">
-          ← Game Night
-        </Link>
+        <div className="text-2xl px-1 min-w-[64px]" aria-hidden>⛳</div>
         <div className="text-center leading-tight min-w-0">
           <div className="font-bold tracking-tight truncate">Pin Seeker · {course.name}</div>
           <div className="text-[11px] uppercase tracking-widest text-white/60">
@@ -928,7 +923,7 @@ export default function GolfGame({ date, challenge }: { date: string; challenge:
               Play this course again (practice)
             </button>
             <div className="mt-4 text-center text-xs text-slate-500">
-              {isToday ? "New course at midnight Eastern." : <Link className="underline" href="/golf">Play today&apos;s course</Link>}
+              {isToday ? "New course at midnight Eastern." : <a className="underline" href="/">Play today&apos;s course</a>}
             </div>
           </div>
         </div>
