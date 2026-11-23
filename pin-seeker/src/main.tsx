@@ -1,8 +1,7 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import GolfGame from "./GolfGame";
 import { isValidDate, todayEastern } from "./lib/course";
-import { parseToPar } from "./lib/shot";
+import { parseToPar } from "./lib/scoring";
 import "./index.css";
 
 const params = new URLSearchParams(window.location.search);
@@ -13,7 +12,7 @@ const by = (params.get("by") || "").slice(0, 40).trim();
 const challenge = beat != null ? { toPar: beat, by: by || "A friend" } : null;
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+  <>
     <GolfGame date={date} challenge={challenge} />
-  </StrictMode>,
+  </>,
 );

@@ -8,3 +8,17 @@ body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
+
+@keyframes psPop {
+  0% { transform: scale(0.4); opacity: 0; }
+  15% { transform: scale(1.12); opacity: 1; }
+  25% { transform: scale(1); }
+  80% { opacity: 1; }
+  100% { transform: translateY(-20px); opacity: 0; }
+}
+.ps-pop { animation: psPop 1.8s ease-out forwards; }
+@keyframes psRise {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.ps-rise { animation: psRise 0.35s cubic-bezier(.2,.9,.3,1.2); }
